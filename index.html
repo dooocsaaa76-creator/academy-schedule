@@ -9,13 +9,13 @@
 :root{
   --ink:#1C2733; --muted:#5B6878; --line:#E2E6EB; --bg:#F3F5F8; --paper:#FFFFFF;
   --head:#D6E4F3; --head-ink:#14304F; --sun:#D63A3A; --sat:#1F5FD1; --accent:#1F5FD1;
-  --staff:#8A5A00; --warn:#D63A3A; --soft:#EEF3F9;
+  --staff:#8A5A00; --warn:#D63A3A; --soft:#EEF3F9; color-scheme:light;
   box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --ink:#E6EBF1; --muted:#9AA6B4; --line:#2B3440; --bg:#131820; --paper:#1A212B;
   --head:#22344A; --head-ink:#CFE0F3; --sun:#FF6B6B; --sat:#6FA3FF; --accent:#6FA3FF;
-  --staff:#E3B35C; --warn:#FF6B6B; --soft:#202A36;
+  --staff:#E3B35C; --warn:#FF6B6B; --soft:#202A36; color-scheme:dark;
 }}
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%}
@@ -103,6 +103,18 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .trow .np{font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap}
 .trow .pv{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700}
 
+/* 행사 하이라이트 */
+.cal .ev,.cal .tk,.cal .staff{transition:opacity .15s}
+.cal.focus .ev,.cal.focus .tk,.cal.focus .staff{opacity:.15}
+.cal.focus .hl{opacity:1 !important}
+.cal.focus .ev.hl{box-shadow:0 0 0 2px #39FF14}
+.cal.focus .tk.hl{border:1px solid #39FF14;color:var(--ink);text-decoration:none}
+.cal.focus .tk.hl.done .t{text-decoration:line-through}
+.cal.focus .day.hlday{background:rgba(57,255,20,.07)}
+.tk .dd{display:none;flex:none;font-size:10.5px;font-weight:800;background:#39FF14;color:#0B2A00;border-radius:3px;padding:0 4px}
+.cal.focus .tk.hl .dd{display:inline-block}
+.todo[data-hev]:hover{background:var(--soft)}
+@media (prefers-reduced-motion:reduce){.cal .ev,.cal .tk,.cal .staff{transition:none}}
 /* 사이드 */
 .side{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px;position:sticky;top:84px}
 .side h3{margin:0 0 4px;font-size:15px}
@@ -393,6 +405,7 @@ function render(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.view===state.view));
   $("#whoBtn").textContent = state.user ? `${state.user} 님` : "사용자 선택";
   const app=$("#app");
+  curFocus=null;
   const fb=filterBarHTML();
   if(state.view==="cal") app.innerHTML = fb+`<div class="layout"><div>${calHTML()}</div>${sideHTML()}</div>`;
   else if(state.view==="list") app.innerHTML = fb+listHTML();
@@ -431,7 +444,8 @@ function chipEv(ev, cont){
 function chipTask({t,ev}){
   const cls=["tk"]; if(t.done) cls.push("done"); else if(isLate(t)) cls.push("late");
   const aud=t.audience?`·${t.audience}`:"";
-  return `<button type="button" class="${cls.join(" ")}" data-ev="${ev.id}" data-task="${t.id}" title="${esc(`${CHANNELS[t.channel]?.name||""} ${t.label}${aud} ${t.time} — ${ev.title}`)}"><span class="ch ${t.channel}">${CHANNELS[t.channel]?.short||"•"}</span><span class="t">${esc(t.label+aud)} · ${esc(ev.title)}</span></button>`;
+  const n=diff(t.date,ev.date); const dd=n>0?`D-${n}`:n===0?"당일":`D+${-n}`;
+  return `<button type="button" class="${cls.join(" ")}" data-ev="${ev.id}" data-task="${t.id}" title="${esc(`${CHANNELS[t.channel]?.name||""} ${t.label}${aud} ${t.time} — ${ev.title}`)}"><span class="ch ${t.channel}">${CHANNELS[t.channel]?.short||"•"}</span><span class="dd">${dd}</span><span class="t">${esc(t.label+aud)} · ${esc(ev.title)}</span></button>`;
 }
 
 function calHTML(){
@@ -476,7 +490,7 @@ function todoItem({t,ev}){
   const when = t.done ? "완료" : dd<0 ? `${-dd}일 지남` : dd===0 ? "오늘" : `D-${dd}`;
   const cls=["todo"]; if(t.done)cls.push("done"); else if(isLate(t))cls.push("late");
   const meta=[`${md(t.date)}(${dow(t.date)}) ${t.time||""}`, t.audience, t.grades, t.assignee?`담당 ${t.assignee}`:"", t.done&&t.doneBy?`✓ ${t.doneBy}`:""].filter(Boolean).join(" · ");
-  return `<div class="${cls.join(" ")}">
+  return `<div class="${cls.join(" ")}" data-hev="${ev.id}">
     <input type="checkbox" data-toggle="${ev.id}|${t.id}" ${t.done?"checked":""} aria-label="${esc(t.label)} 완료">
     <div class="ti"><span class="ch ${t.channel}">${CHANNELS[t.channel]?.short||"•"}</span>${esc(t.label)} <span class="tag">${esc(ev.title)}</span></div>
     <span class="when">${when}</span>
@@ -641,6 +655,27 @@ document.addEventListener("click", async e=>{
 });
 $("#addBtn").onclick=()=>openEditor(null, state.view==="cal" && (state.y!==now.getFullYear()||state.m!==now.getMonth()) ? `${state.y}-${pad(state.m+1)}-01` : todayStr());
 $("#whoBtn").onclick=openUserPicker;
+
+/* 행사에 마우스를 올리면 그 행사의 홍보 일정만 밝게 */
+let curFocus=null;
+function setFocus(id){
+  const cal=document.querySelector(".cal"); if(!cal) return;
+  cal.querySelectorAll(".hl").forEach(x=>x.classList.remove("hl"));
+  cal.querySelectorAll(".hlday").forEach(x=>x.classList.remove("hlday"));
+  if(!id){ cal.classList.remove("focus"); return; }
+  const els=cal.querySelectorAll(`[data-ev="${CSS.escape(id)}"]`);
+  if(!els.length){ cal.classList.remove("focus"); return; }
+  cal.classList.add("focus");
+  els.forEach(x=>{ x.classList.add("hl"); x.closest(".day")?.classList.add("hlday");
+    const st=x.nextElementSibling; if(st?.classList.contains("staff")) st.classList.add("hl"); });
+}
+function focusFrom(target){
+  const c=target.closest?.(".cal [data-ev], .todo[data-hev]");
+  const id=c ? (c.dataset.ev||c.dataset.hev) : null;
+  if(id!==curFocus){ curFocus=id; setFocus(id); }
+}
+document.addEventListener("mouseover",e=>focusFrom(e.target));
+document.addEventListener("focusin",e=>focusFrom(e.target));
 $("#homeBtn").onclick=()=>{ state.view="cal"; state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
 
 document.addEventListener("change", e=>{
