@@ -115,6 +115,22 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .cal.focus .tk.hl .dd{display:inline-block}
 .todo[data-hev]:hover{background:var(--soft)}
 @media (prefers-reduced-motion:reduce){.cal .ev,.cal .tk,.cal .staff{transition:none}}
+/* 이달의 행사 */
+.evitem{display:grid;grid-template-columns:6px 58px minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;text-align:left;border:1px solid transparent;background:none;padding:8px 6px;border-radius:8px;margin-bottom:2px}
+.evitem:hover{background:var(--soft)}
+.evitem[aria-pressed="true"]{border-color:#39FF14;background:var(--soft)}
+.evitem .cb{align-self:stretch;border-radius:3px}
+.evitem .d{font-weight:800;font-size:13px;white-space:nowrap}
+.evitem .d small{font-weight:500;color:var(--muted)}
+.evitem .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.evitem .nm small{display:block;font-weight:500;font-size:11.5px;color:var(--muted)}
+.evitem .pg{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.evitem .pg.late{color:var(--warn)}
+.evitem .pg.ok{color:#22A35A}
+.evdetail{border-left:2px solid #39FF14;margin:2px 0 10px 8px;padding:2px 0 4px 10px}
+.evdetail .acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.selbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:rgba(57,255,20,.1);border:1px solid #39FF14;border-radius:8px;padding:6px 10px;margin-bottom:10px;font-size:13px}
+.selbar b{font-weight:800}
 /* 사이드 */
 .side{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px;position:sticky;top:84px}
 .side h3{margin:0 0 4px;font-size:15px}
@@ -382,7 +398,7 @@ const state = {
   events:[], types:DEFAULT_TYPES, view:"cal", y:now.getFullYear(), m:now.getMonth(),
   showTasks: lsGet("acad-showTasks",true),
   hidden: lsGet("acad-hiddenTypes",[]),
-  q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null,
+  q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null, sel:null,
   user: lsGet("acad-user","")
 };
 let store, draft=null, tdraft=null, autoFilled=false;
@@ -429,6 +445,17 @@ function filterBarHTML(){
   </div>`;
 }
 
+function selBarHTML(ev,y,m){
+  const f=new Date(y,m,1), l=new Date(y,m+1,0);
+  const p0=ymd(new Date(y,m,1-f.getDay())), p1=ymd(new Date(y,m,l.getDate()+(6-l.getDay())));
+  const ts=ev.tasks||[]; const before=ts.filter(t=>t.date<p0).length, after=ts.filter(t=>t.date>p1).length;
+  const evIn = ev.date<=p1 && (ev.endDate||ev.date)>=p0;
+  const notes=[ before?`<button type="button" class="linkish" data-nav="-1">이전 달에 홍보 ${before}개</button>`:"",
+    after?`<button type="button" class="linkish" data-nav="1">다음 달에 홍보 ${after}개</button>`:"",
+    !evIn?`<button type="button" class="linkish" data-goto="${ev.date}">행사일(${md(ev.date)})로 이동</button>`:"" ].filter(Boolean).join(" · ");
+  return `<div class="selbar"><span>선택한 행사만 보는 중: <b>${esc(ev.title)}</b> (${md(ev.date)})</span>${notes?`<span>${notes}</span>`:""}
+    <button type="button" class="btn small" id="clearSel" style="margin-left:auto">전체 일정 보기</button></div>`;
+}
 function ymSelects(y,m){
   const cy=new Date().getFullYear(); const ys=[];
   for(let k=Math.min(cy-1,y);k<=Math.max(cy+3,y);k++) ys.push(k);
@@ -458,16 +485,18 @@ function calHTML(){
   const offDays=new Set();
   for(const ev of state.events){
     if(typeOf(ev.type).name.includes("휴무")) evDays(ev).forEach(d=>offDays.add(d));
-    if(!visible(ev)) continue; evDays(ev).forEach((d,i)=>put(d,"ev",{ev,cont:i>0}));
+    if(state.sel ? ev.id!==state.sel : !visible(ev)) continue; evDays(ev).forEach((d,i)=>put(d,"ev",{ev,cont:i>0}));
   }
-  if(state.showTasks) for(const x of filterMine(allTasks())) put(x.t.date,"tk",x);
+  const selEv = state.sel && state.events.find(e=>e.id===state.sel);
+  if(selEv){ for(const t of (selEv.tasks||[])) put(t.date,"tk",{t,ev:selEv}); }
+  else if(state.showTasks) for(const x of filterMine(allTasks())) put(x.t.date,"tk",x);
   const T=todayStr();
   let html=`<div class="monthbar">
     <button class="btn" data-nav="-1" aria-label="이전 달">‹</button>
     ${ymSelects(y,m)}
     <button class="btn" data-nav="1" aria-label="다음 달">›</button>
     <button class="btn" data-nav="0">이번 달</button>
-</div><div class="calwrap"><div class="cal">`;
+</div>${selEv?selBarHTML(selEv,y,m):""}<div class="calwrap"><div class="cal">`;
   let d=new Date(start), wk=0;
   while(d<=end){
     wk++;
@@ -501,15 +530,37 @@ function todoItem({t,ev}){
 }
 function filterMine(arr){ return state.who ? arr.filter(x=>(x.t.assignee||"")===state.who) : arr; }
 
+function monthEvents(){
+  const p0=`${state.y}-${pad(state.m+1)}-01`, p1=ymd(new Date(state.y,state.m+1,0));
+  return state.events.filter(e=>visible(e) && e.date<=p1 && (e.endDate||e.date)>=p0)
+    .sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+}
+function evItemHTML(ev){
+  const ty=typeOf(ev.type), ts=ev.tasks||[], done=ts.filter(t=>t.done).length, late=ts.some(isLate);
+  const sel=state.sel===ev.id;
+  const pg = !ts.length ? "" : late ? `<span class="pg late">지연 ${done}/${ts.length}</span>` : done===ts.length ? `<span class="pg ok">완료 ${done}/${ts.length}</span>` : `<span class="pg">${done}/${ts.length}</span>`;
+  let html=`<button type="button" class="evitem" data-sel="${ev.id}" data-hev="${ev.id}" aria-pressed="${sel}">
+    <span class="cb" style="background:${ty.color}"></span>
+    <span class="d">${md(ev.date)}<small>(${dow(ev.date)})</small></span>
+    <span class="nm">${esc(ev.title)}<small>${esc([ty.name, ev.time, ev.staff].filter(Boolean).join(" · "))}</small></span>
+    ${pg}</button>`;
+  if(sel){
+    const list=sortTasks([...ts]).map(t=>({t,ev}));
+    html+=`<div class="evdetail">
+      ${list.length?list.map(todoItem).join(""):`<p class="sub" style="margin:4px 0">등록된 홍보 일정이 없습니다.</p>`}
+      <div class="acts"><button type="button" class="btn small" data-ev="${ev.id}">행사 수정</button><button type="button" class="btn small" id="clearSel">전체 일정 보기</button></div>
+    </div>`;
+  }
+  return html;
+}
 function sideHTML(){
-  const T=todayStr(), wk=addDays(T,7);
-  const ts=filterMine(allTasks().filter(x=>!x.t.done));
-  const late=ts.filter(x=>x.t.date<T), soon=ts.filter(x=>x.t.date>=T && x.t.date<=wk);
-  return `<aside class="side"><h3>놓치면 안 되는 일</h3><p class="sub">지난 미완료 + 앞으로 7일</p>
-    ${state.who?`<p class="sub" style="margin:0">담당: <b>${esc(state.who)}</b></p>`:""}
-    ${late.length?`<div class="grp late">지났는데 안 끝난 일 ${late.length}</div>${late.map(todoItem).join("")}`:""}
-    <div class="grp">이번 주 ${soon.length}</div>
-    ${soon.length?soon.map(todoItem).join(""):`<p class="sub">7일 안에 예정된 홍보 일이 없습니다.</p>`}
+  const evs=monthEvents();
+  const selEv=state.sel && state.events.find(e=>e.id===state.sel);
+  const extra = selEv && !evs.some(e=>e.id===selEv.id) ? `<div class="grp">선택한 행사</div>${evItemHTML(selEv)}<div class="grp">${state.m+1}월 행사</div>` : "";
+  return `<aside class="side"><h3>${state.y}년 ${state.m+1}월 행사 <span class="tag">${evs.length}</span></h3>
+    <p class="sub">행사를 고르면 달력에 그 행사와 홍보 일정만 보입니다. 다시 누르면 전체 보기로 돌아가요.</p>
+    ${extra}
+    ${evs.length?evs.map(evItemHTML).join(""):`<p class="sub">이 달에 등록된 행사가 없습니다.</p>`}
   </aside>`;
 }
 
@@ -646,6 +697,9 @@ document.addEventListener("click", async e=>{
   if(b.id==="allTypes"){ const all=state.types.every(t=>!state.hidden.includes(t.key)); state.hidden = all ? state.types.map(t=>t.key) : []; lsSet("acad-hiddenTypes",state.hidden); render(); return; }
   if(b.id==="editTypes"){ openTypeEditor(); return; }
   if(b.id==="editStaff"){ openStaffEditor(); return; }
+  if(b.dataset.sel){ state.sel = state.sel===b.dataset.sel ? null : b.dataset.sel; render(); return; }
+  if(b.id==="clearSel"){ state.sel=null; render(); return; }
+  if(b.dataset.goto){ const d=parse(b.dataset.goto); state.y=d.getFullYear(); state.m=d.getMonth(); render(); return; }
   if(b.dataset.nav!=null){ const n=+b.dataset.nav; if(n===0){ state.y=now.getFullYear(); state.m=now.getMonth(); } else { const d=new Date(state.y,state.m+n,1); state.y=d.getFullYear(); state.m=d.getMonth(); } render(); return; }
   if(b.dataset.toggle){ const [a,c]=b.dataset.toggle.split("|"); toggleTask(a,c,b.checked); return; }
   if(b.dataset.copy){ const [a,c]=b.dataset.copy.split("|"); const t=state.events.find(x=>x.id===a)?.tasks.find(x=>x.id===c);
@@ -670,13 +724,15 @@ function setFocus(id){
     const st=x.nextElementSibling; if(st?.classList.contains("staff")) st.classList.add("hl"); });
 }
 function focusFrom(target){
-  const c=target.closest?.(".cal [data-ev], .todo[data-hev]");
+  if(state.sel){ if(curFocus){ curFocus=null; setFocus(null); } return; }
+  const c=target.closest?.(".cal [data-ev], [data-hev]");
   const id=c ? (c.dataset.ev||c.dataset.hev) : null;
   if(id!==curFocus){ curFocus=id; setFocus(id); }
 }
 document.addEventListener("mouseover",e=>focusFrom(e.target));
 document.addEventListener("focusin",e=>focusFrom(e.target));
-$("#homeBtn").onclick=()=>{ state.view="cal"; state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && state.sel && !document.querySelector("dialog[open]")){ state.sel=null; render(); } });
+$("#homeBtn").onclick=()=>{ state.sel=null; state.view="cal"; state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
 
 document.addEventListener("change", e=>{
   const el=e.target;
@@ -860,6 +916,7 @@ sForm.addEventListener("click",async e=>{
     }
     state.cfg = cfg || null;
     state.events = docs.filter(d=>d.id!=="_config");
+    if(state.sel && !state.events.some(e=>e.id===state.sel)) state.sel=null;
     render();
     if(first){ first=false; if(!state.user) openUserPicker(); }
     else if($("#udlg").open) openUserPicker();
