@@ -83,10 +83,11 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .fbar .chip.off{opacity:.35;filter:grayscale(.6)}
 .fbar .chip input{margin:0}
 .fbar .sep{width:1px;height:22px;background:var(--line);margin:0 4px}
-.trow{display:grid;grid-template-columns:44px minmax(0,1fr) 90px auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.trow{display:grid;grid-template-columns:44px minmax(0,1fr) auto 70px auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .trow input[type=color]{width:40px;height:34px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
 .trow input[type=text]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:7px 9px;width:100%}
 .trow .cnt{font-size:12px;color:var(--muted)}
+.trow .np{font-size:12px;display:flex;align-items:center;gap:4px;white-space:nowrap}
 .trow .pv{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:700}
 
 /* 사이드 */
@@ -226,7 +227,11 @@ const DEFAULT_TYPES = [
   { key:"info",  name:"설명회",   color:"#FFE94D" },
   { key:"trial", name:"체험수업", color:"#B6EB7A" },
   { key:"open",  name:"개강모집", color:"#6FD8EC" },
+  { key:"openday", name:"개강일", color:"#1515E0", noPromo:true },
+  { key:"off",     name:"휴무",   color:"#E5484D", noPromo:true },
 ];
+/* 예전에 저장된 메뉴에 개강일·휴무가 없으면 한 번만 추가 */
+const ADDED_V2 = DEFAULT_TYPES.filter(t=>t.noPromo);
 const PALETTE = ["#FFE94D","#B6EB7A","#6FD8EC","#FFC46B","#FFB3CB","#C9B6FF","#E5484D","#9FE3C8","#D9DEE5"];
 const CHANNELS = {
   blog:{name:"블로그",short:"블"}, sms:{name:"문자",short:"문"}, alimtalk:{name:"알림톡",short:"알"},
@@ -351,7 +356,7 @@ const state = {
   q:"", ftype:"", period:"upcoming", mine:false,
   user: lsGet("acad-user","")
 };
-let store, draft=null, tdraft=null;
+let store, draft=null, tdraft=null, autoFilled=false;
 
 /* ---------- 공통 계산 ---------- */
 function allTasks(){
@@ -520,8 +525,9 @@ function todoViewHTML(){
 
 /* ---------- 편집 창 ---------- */
 function openEditor(id, date, focusTask){
+  autoFilled=false;
   if(id){ const ev=state.events.find(e=>e.id===id); if(!ev) return; draft=clone(ev); draft.tasks ||= []; }
-  else draft={id:uid(), title:"", type:(state.types.find(t=>!state.hidden.includes(t.key))||state.types[0]||{key:"etc"}).key, date:date||todayStr(), endDate:"", time:"", place:"", staff:"", grades:"", memo:"", tasks:[]};
+  else draft={id:uid(), title:"", type:(state.types.find(t=>!state.hidden.includes(t.key)&&!t.noPromo)||state.types[0]||{key:"etc"}).key, date:date||todayStr(), endDate:"", time:"", place:"", staff:"", grades:"", memo:"", tasks:[]};
   drawEditor(!id);
   $("#dlg").showModal();
   if(focusTask){ const c=document.querySelector(`.tcard[data-tid="${focusTask}"]`); if(c){ c.scrollIntoView({block:"center"}); c.classList.add("flash"); } }
@@ -620,25 +626,27 @@ form.addEventListener("input", e=>{
   const el=e.target;
   if(el.dataset.e){ draft[el.dataset.e]=el.value; return; }
   const card=el.closest("[data-tid]");
-  if(card && el.dataset.f){ const t=draft.tasks.find(x=>x.id===card.dataset.tid); t[el.dataset.f]= el.type==="checkbox"?el.checked:el.value;
+  if(card && el.dataset.f){ autoFilled=false; const t=draft.tasks.find(x=>x.id===card.dataset.tid); t[el.dataset.f]= el.type==="checkbox"?el.checked:el.value;
     if(el.dataset.f==="done") t.doneBy=el.checked?(state.user||"이름없음"):"";
     if(el.dataset.f==="channel") card.className=`tcard ${el.value}`; }
 });
 form.addEventListener("change", e=>{
   const el=e.target;
   if(el.name==="type"){ draft.type=el.value;
-    if(!draft.tasks.length && draft.date){ draft.tasks=buildTasks(draft.type,draft.date); redraw(); toast(`기본 홍보 일정(블로그·문자) ${draft.tasks.length}개를 채웠습니다. 날짜를 확인해 주세요.`); } }
+    if(typeOf(draft.type).noPromo){ if(autoFilled && draft.tasks.length){ draft.tasks=[]; autoFilled=false; redraw(); } }
+    else if(!draft.tasks.length && draft.date){ draft.tasks=buildTasks(draft.type,draft.date); autoFilled=true; redraw(); toast(`기본 홍보 일정(블로그·문자) ${draft.tasks.length}개를 채웠습니다. 날짜를 확인해 주세요.`); } }
   if(el.dataset.f==="date" || el.dataset.e==="date") redraw();
 });
 form.addEventListener("click", async e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.hasAttribute("data-close")){ $("#dlg").close(); return; }
-  if(b.id==="addTask"){ draft.tasks.push({id:uid(),channel:"sms",label:"",date:draft.date?addDays(draft.date,-7):todayStr(),time:"18:00",audience:"",grades:"",assignee:"",content:"",done:false,doneBy:""}); redraw(); return; }
-  if(b.hasAttribute("data-deltask")){ const id=b.closest("[data-tid]").dataset.tid; draft.tasks=draft.tasks.filter(t=>t.id!==id); redraw(); return; }
+  if(b.id==="addTask"){ autoFilled=false; draft.tasks.push({id:uid(),channel:"sms",label:"",date:draft.date?addDays(draft.date,-7):todayStr(),time:"18:00",audience:"",grades:"",assignee:"",content:"",done:false,doneBy:""}); redraw(); return; }
+  if(b.hasAttribute("data-deltask")){ autoFilled=false; const id=b.closest("[data-tid]").dataset.tid; draft.tasks=draft.tasks.filter(t=>t.id!==id); redraw(); return; }
   if(b.id==="tplBtn"){
+    if(typeOf(draft.type).noPromo){ toast(`${typeOf(draft.type).name}에는 기본 홍보 일정을 채우지 않습니다. 필요하면 ‘+ 할 일 추가’를 눌러 주세요.`); return; }
     if(!draft.date){ toast("행사 날짜를 먼저 입력해 주세요."); return; }
     if(draft.tasks.length && !confirm("지금 할 일 목록을 지우고 기본 홍보 일정으로 바꿀까요?")) return;
-    draft.tasks=buildTasks(draft.type,draft.date); redraw(); return;
+    draft.tasks=buildTasks(draft.type,draft.date); autoFilled=true; redraw(); return;
   }
   if(b.id==="delBtn"){ if(!confirm(`‘${draft.title}’ 행사를 삭제할까요? 홍보 할 일도 함께 삭제됩니다.`)) return;
     try{ await store.remove(draft.id); $("#dlg").close(); toast("삭제했습니다."); }catch(err){ toast("삭제하지 못했습니다: "+err.message); } return; }
@@ -661,10 +669,11 @@ function drawTypeEditor(){
   const count=k=>state.events.filter(e=>e.type===k).length;
   $("#tForm").innerHTML=`<header><h2>메뉴 편집</h2><button type="button" class="btn" data-tclose>닫기</button></header>
   <div class="scroll">
-    <p style="margin:0 0 8px;color:var(--muted);font-size:13px">여기서 바꾼 메뉴는 팀 전체에 똑같이 적용됩니다. 이름에 ‘휴무’가 들어간 종류는 달력 날짜가 빨간색으로 표시됩니다.</p>
+    <p style="margin:0 0 8px;color:var(--muted);font-size:13px">여기서 바꾼 메뉴는 팀 전체에 똑같이 적용됩니다. ‘홍보 자동’을 끄면 그 종류를 고를 때 기본 홍보 일정이 채워지지 않습니다. 이름에 ‘휴무’가 들어간 종류는 달력 날짜가 빨간색으로 표시됩니다.</p>
     ${tdraft.map((t,i)=>`<div class="trow" data-ti="${i}">
       <input type="color" data-tf="color" value="${esc(t.color)}" aria-label="색">
       <input type="text" data-tf="name" value="${esc(t.name)}" placeholder="예: 방학특강">
+      <label class="np" title="이 종류를 고르면 블로그·문자 기본 홍보 일정을 자동으로 채웁니다"><input type="checkbox" data-tf="promo" ${t.noPromo?"":"checked"}>홍보 자동</label>
       <span class="cnt">행사 ${count(t.key)}개</span>
       <button type="button" class="btn small danger" data-tdel="${i}">삭제</button>
     </div>`).join("")}
@@ -673,7 +682,8 @@ function drawTypeEditor(){
   <footer><span class="info"></span><button type="button" class="btn" data-tclose>취소</button><button type="button" class="btn primary" id="tSave">저장</button></footer>`;
 }
 const tForm=$("#tForm");
-tForm.addEventListener("input",e=>{ const r=e.target.closest("[data-ti]"); if(r && e.target.dataset.tf) tdraft[+r.dataset.ti][e.target.dataset.tf]=e.target.value; });
+tForm.addEventListener("input",e=>{ const r=e.target.closest("[data-ti]"); const f=e.target.dataset.tf; if(!r||!f) return;
+  if(f==="promo") tdraft[+r.dataset.ti].noPromo=!e.target.checked; else tdraft[+r.dataset.ti][f]=e.target.value; });
 tForm.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b) return;
   if(b.hasAttribute("data-tclose")){ $("#tdlg").close(); return; }
@@ -716,6 +726,14 @@ function askName(){
   store.subscribe(docs=>{
     const cfg=docs.find(d=>d.id==="_config");
     state.types = cfg?.types?.length ? cfg.types : DEFAULT_TYPES;
+    if(cfg && !cfg.v2){
+      const types=clone(cfg.types||[]);
+      for(const d of ADDED_V2){
+        const same=types.find(t=>t.name.replace(/\s/g,"")===d.name);
+        if(same) same.noPromo=true; else types.push(clone(d));
+      }
+      store.save({...cfg, types, v2:true}).catch(()=>{});
+    }
     state.events = docs.filter(d=>d.id!=="_config");
     render();
   }, err=>{
