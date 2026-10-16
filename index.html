@@ -139,10 +139,10 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 @media (max-width:900px){.yr{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.yr{grid-template-columns:1fr}}
 .mm{background:var(--paper);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.mm .mt{display:block;width:100%;border:0;padding:7px;font-weight:800;font-size:16px;background:var(--head);color:var(--head-ink);text-align:center}
+.mm .mt{display:block;width:100%;border:0;cursor:default;padding:7px;font-weight:800;font-size:16px;background:var(--head);color:var(--head-ink);text-align:center}
 .mm.prev .mt{background:#FFF1C9;color:#5C4700}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mm.prev .mt{background:#3B3420;color:#F3DFA2}}
-.mm .mt:hover{filter:brightness(1.08)}
+
 .mm table{width:100%;border-collapse:collapse;table-layout:fixed}
 .mm th{font-size:12px;font-weight:800;padding:4px 0;color:var(--muted)}
 .mm th:first-child{color:var(--sun)} .mm th:last-child{color:var(--sat)}
@@ -150,7 +150,16 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .mm td button{display:block;width:100%;height:28px;border:0;border-radius:4px;background:none;font-weight:700;font-size:13.5px;color:var(--ink);padding:0}
 .mm td button:hover{outline:1px solid var(--line)}
 .mm td.su button,.mm td.ho button{color:var(--sun)} .mm td.sa button{color:var(--sat)}
-.mm td.has button{color:var(--cellink) !important}
+.mm td.mk button{background:var(--mk);color:var(--mkink) !important}
+.mm td.etc button{position:relative}
+.mm td.etc button::after{content:"";position:absolute;right:3px;top:3px;width:5px;height:5px;border-radius:50%;background:currentColor}
+.mm .notes .mkl i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.ynote{display:block;width:100%;margin-top:6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:6px;padding:5px 7px;font-size:12px;resize:vertical;min-height:30px;font-family:inherit}
+.ylegend{display:flex;flex-wrap:wrap;gap:6px}
+.ylegend span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 9px;border-radius:5px}
+.kpick{display:grid;gap:8px}
+.kpick button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:2px solid transparent;border-radius:8px;padding:10px 12px;font-weight:800;font-size:15px}
+.kpick button[aria-pressed="true"]{border-color:var(--ink)}
 .mm td.td button{outline:2px solid #39FF14;outline-offset:-1px}
 .mm .notes{padding:6px 10px 9px;font-size:11.5px;line-height:1.6;border-top:1px solid var(--line);min-height:30px}
 .mm .notes .h{color:var(--sun);font-weight:600}
@@ -276,6 +285,7 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
 <dialog id="dlg"><form class="dlg" method="dialog" id="dlgForm" novalidate></form></dialog>
 <dialog id="tdlg" style="width:min(560px,96vw)"><form class="dlg" method="dialog" id="tForm" novalidate></form></dialog>
 <dialog id="sdlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="sForm" novalidate></form></dialog>
+<dialog id="ydlg" style="width:min(380px,96vw)"><form class="dlg" method="dialog" id="yForm" novalidate></form></dialog>
 <dialog id="udlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="uForm" novalidate></form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -431,9 +441,11 @@ const state = {
   events:[], types:DEFAULT_TYPES, view:"cal", y:now.getFullYear(), m:now.getMonth(),
   showTasks: lsGet("acad-showTasks",true),
   hidden: lsGet("acad-hiddenTypes",[]),
-  q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null, sel:null, yy:new Date().getFullYear(),
+  q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null, sel:null, ym:{}, yy:new Date().getFullYear(),
   user: lsGet("acad-user","")
 };
+let pendingRender=false;
+document.addEventListener("focusout",e=>{ if(e.target.matches?.(".ynote") && pendingRender){ pendingRender=false; setTimeout(render,0); } });
 let store, draft=null, tdraft=null, autoFilled=false;
 
 /* ---------- 공통 계산 ---------- */
@@ -458,7 +470,7 @@ function render(){
   const fb=filterBarHTML();
   if(state.view==="cal") app.innerHTML = fb+`<div class="layout"><div>${calHTML()}</div>${sideHTML()}</div>`;
   else if(state.view==="list") app.innerHTML = fb+listHTML();
-  else if(state.view==="year") app.innerHTML = fb+yearHTML();
+  else if(state.view==="year") app.innerHTML = yearHTML();
   else app.innerHTML = fb+todoViewHTML();
   if(state.view==="list"){ const q=$("#q"); if(q && renderListFocus){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } }
 }
@@ -479,51 +491,104 @@ function filterBarHTML(){
   </div>`;
 }
 
-/* ---------- 연간 달력 ---------- */
+/* ---------- 연간 달력 (월 일정과 별개) ---------- */
+const YKINDS = {
+  off:{name:"휴무",            color:"#2BD94A", ink:"#082E0E"},
+  q2: {name:"2개월 분기 개강일", color:"#2EE6E6", ink:"#003838"},
+  q3: {name:"3개월 분기 개강일", color:"#A855F7", ink:"#FFFFFF"},
+  etc:{name:"기타",            color:"#FFB648", ink:"#3A2400"},
+};
+const ymId = (y,m) => `_ym_${y}-${pad(m+1)}`;
+const ymDoc = (y,m) => state.ym[ymId(y,m)];
 function yearHTML(){
   const Y=state.yy, cy=new Date().getFullYear(), T=todayStr();
   const ys=[]; for(let k=Math.min(cy-1,Y);k<=Math.max(cy+2,Y);k++) ys.push(k);
-  const order=t=>{ const ty=typeOf(t); const i=state.types.findIndex(x=>x.key===t); return (ty.noPromo||ty.name.includes("휴무")?0:100)+(i<0?99:i); };
-  const map={};
-  for(const ev of state.events){ if(!visible(ev)) continue; evDays(ev).forEach(d=>(map[d] ||= []).push(ev)); }
-  for(const k in map) map[k].sort((a,b)=>order(a.type)-order(b.type));
   const months=[...[8,9,10,11].map(m=>[Y-1,m]), ...Array.from({length:12},(_,m)=>[Y,m])];
+  const cnt={off:0,q2:0,q3:0,etc:0};
   const noData = !Object.keys(HOLIDAYS).some(k=>k.startsWith(Y+"-"));
   const mmHTML=([y,m])=>{
     const first=new Date(y,m,1).getDay(), n=new Date(y,m+1,0).getDate();
-    let cells="", notesH=[], notesE=[];
+    const doc=ymDoc(y,m)||{}, marks=doc.marks||{};
+    let cells="";
     for(let i=0;i<first;i++) cells+="<td></td>";
     for(let d=1; d<=n; d++){
-      const s=`${y}-${pad(m+1)}-${pad(d)}`, wd=(first+d-1)%7, hol=HOLIDAYS[s], evs=map[s]||[];
+      const s=`${y}-${pad(m+1)}-${pad(d)}`, wd=(first+d-1)%7, hol=HOLIDAYS[s], mk=marks[d], K=mk&&YKINDS[mk.k];
       const cls=[]; if(wd===0)cls.push("su"); if(wd===6)cls.push("sa"); if(hol)cls.push("ho"); if(s===T)cls.push("td");
       let style="";
-      if(evs.length){ const ty=typeOf(evs[0].type); cls.push("has"); style=` style="--cellink:${inkFor(ty.color)}"`; }
-      const bg = evs.length ? ` style="background:${typeOf(evs[0].type).color}"` : "";
-      const tip=[hol, ...evs.map(e=>`${typeOf(e.type).name}: ${e.title}`)].filter(Boolean).join("\n");
-      cells+=`<td class="${cls.join(" ")}"${style}><button type="button" data-gomonth="${s}"${bg} title="${esc(tip)}">${d}</button></td>`;
-      if((wd===6) && d<n) cells+="</tr><tr>";
+      if(K){ cls.push("mk"); if(mk.k==="etc") cls.push("etc"); style=` style="--mk:${K.color};--mkink:${K.ink}"`; cnt[mk.k]++; }
+      const tip=[hol, K?(K.name+(mk.memo?`: ${mk.memo}`:"")):""].filter(Boolean).join("\n");
+      cells+=`<td class="${cls.join(" ")}"${style}><button type="button" data-ymark="${s}" title="${esc(tip||"클릭해서 표시하기")}">${d}</button></td>`;
+      if(wd===6 && d<n) cells+="</tr><tr>";
     }
-    /* 공휴일 메모(연속된 같은 이름은 묶기) */
-    const hs=Object.keys(HOLIDAYS).filter(k=>k.startsWith(`${y}-${pad(m+1)}-`)).sort();
+    /* 공휴일 메모 */
+    const notesH=[]; const hs=Object.keys(HOLIDAYS).filter(k=>k.startsWith(`${y}-${pad(m+1)}-`)).sort();
     for(let i=0;i<hs.length;i++){
       let j=i; while(j+1<hs.length && HOLIDAYS[hs[j+1]]===HOLIDAYS[hs[i]] && diff(hs[j],hs[j+1])===1) j++;
-      const a=parse(hs[i]).getDate(), b=parse(hs[j]).getDate();
-      notesH.push(`${a}(${dow(hs[i])})${j>i?`~${b}(${dow(hs[j])})`:""} ${HOLIDAYS[hs[i]]}`); i=j;
+      notesH.push(`${parse(hs[i]).getDate()}(${dow(hs[i])})${j>i?`~${parse(hs[j]).getDate()}(${dow(hs[j])})`:""} ${HOLIDAYS[hs[i]]}`); i=j;
     }
-    const p0=`${y}-${pad(m+1)}-01`, p1=`${y}-${pad(m+1)}-${pad(n)}`;
-    state.events.filter(e=>visible(e) && e.date<=p1 && (e.endDate||e.date)>=p0)
-      .sort((a,b)=>a.date.localeCompare(b.date))
-      .forEach(e=>{ const sd=e.date<p0?p0:e.date; notesE.push(`<span class="e"><i style="background:${typeOf(e.type).color}"></i>${parse(sd).getDate()}(${dow(sd)})${e.endDate&&e.endDate>e.date?`~${e.endDate>p1?"":parse(e.endDate).getDate()}`:""} ${esc(e.title)}</span>`); });
-    return `<div class="mm${y<Y?" prev":""}"><button type="button" class="mt" data-gomonth="${y}-${pad(m+1)}-01">${y}년 ${m+1}월</button>
+    /* 표시 메모 (연속된 같은 표시는 묶기) */
+    const days=Object.keys(marks).map(Number).filter(d=>YKINDS[marks[d]?.k]).sort((a,b)=>a-b);
+    const notesM=[];
+    for(let i=0;i<days.length;i++){
+      const k=marks[days[i]].k; let j=i;
+      if(k!=="etc") while(j+1<days.length && days[j+1]===days[j]+1 && marks[days[j+1]].k===k) j++;
+      const ds=d=>`${d}(${DOW[new Date(y,m,d).getDay()]})`;
+      const label = k==="etc" ? (marks[days[i]].memo||"기타") : YKINDS[k].name;
+      notesM.push(`<div class="mkl"><i style="background:${YKINDS[k].color}"></i>${ds(days[i])}${j>i?`~${ds(days[j])}`:""} ${esc(label)}</div>`); i=j;
+    }
+    const key=`${y}-${pad(m+1)}`;
+    return `<div class="mm${y<Y?" prev":""}"><div class="mt">${y}년 ${m+1}월</div>
       <table><thead><tr>${[..."일월화수목금토"].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody><tr>${cells}</tr></tbody></table>
-      <div class="notes">${notesH.length?`<div class="h">${notesH.join(" / ")}</div>`:""}${notesE.join("<br>")}</div></div>`;
+      <div class="notes">${notesH.length?`<div class="h">${notesH.join(" / ")}</div>`:""}${notesM.join("")}
+        <textarea class="ynote" data-ynote="${key}" rows="1" placeholder="${m+1}월 메모" aria-label="${y}년 ${m+1}월 메모">${esc(doc.note||"")}</textarea></div></div>`;
   };
+  const body=months.map(mmHTML).join("");
   return `<div class="yhead">
     <select class="ym" id="yySel" aria-label="연도">${ys.map(k=>`<option value="${k}" ${k===Y?"selected":""}>${k}년</option>`).join("")}</select>
-    <span class="hint">${Y-1}년 9월 ~ ${Y}년 12월 · 날짜를 누르면 그 달 달력으로 이동합니다.${noData?` · ${Y}년 공휴일 정보는 아직 없습니다.`:""}</span>
+    <div class="ylegend">${Object.entries(YKINDS).map(([k,K])=>`<span style="background:${K.color};color:${K.ink}">${K.name} ${cnt[k]}</span>`).join("")}</div>
+    <span class="hint">날짜를 누르면 표시를 고를 수 있어요.${noData?` · ${Y}년 공휴일 정보는 아직 없습니다.`:""}</span>
     <button type="button" class="btn small" id="printBtn" style="margin-left:auto">인쇄</button>
-  </div><div class="yr">${months.map(mmHTML).join("")}</div>`;
+  </div><div class="yr">${body}</div>`;
 }
+async function saveYm(y,m,fn){
+  const id=ymId(y,m), doc=clone(ymDoc(y,m)||{id, marks:{}, note:""});
+  doc.marks ||= {}; fn(doc); doc.id=id; doc.updatedBy=state.user||"이름없음"; doc.updatedAt=Date.now();
+  try{ await store.save(doc); return true; }catch(err){ toast("저장하지 못했습니다: "+err.message); return false; }
+}
+let ydraft=null;
+function openYMark(s){
+  const d=parse(s), cur=(ymDoc(d.getFullYear(),d.getMonth())?.marks||{})[d.getDate()];
+  ydraft={s, k:cur?.k||"", memo:cur?.memo||""};
+  drawYMark(); $("#ydlg").showModal();
+}
+function drawYMark(){
+  const d=parse(ydraft.s), hol=HOLIDAYS[ydraft.s];
+  $("#yForm").innerHTML=`<header><h2>${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${dow(ydraft.s)})</h2><button type="button" class="btn" data-yclose>닫기</button></header>
+  <div class="scroll">
+    ${hol?`<p style="margin:0 0 10px;color:var(--sun);font-weight:700;font-size:13px">${hol}</p>`:""}
+    <div class="kpick">${Object.entries(YKINDS).map(([k,K])=>`<button type="button" data-yk="${k}" aria-pressed="${ydraft.k===k}" style="background:${K.color};color:${K.ink}">${K.name}</button>`).join("")}</div>
+    ${ydraft.k==="etc"?`<label class="f" style="margin-top:12px"><span>메모</span><input id="yMemo" value="${esc(ydraft.memo)}" placeholder="예: 정상수업, 3월 근무자 급여처리"></label>`:""}
+  </div>
+  <footer><span class="info"></span>
+    ${(ymDoc(d.getFullYear(),d.getMonth())?.marks||{})[d.getDate()]?`<button type="button" class="btn danger" id="yClear">표시 지우기</button>`:""}
+    <button type="button" class="btn" data-yclose>취소</button>
+    ${ydraft.k==="etc"?`<button type="button" class="btn primary" id="ySave">저장</button>`:""}
+  </footer>`;
+  if(ydraft.k==="etc") setTimeout(()=>$("#yMemo")?.focus(),0);
+}
+async function commitYMark(k,memo){
+  const d=parse(ydraft.s);
+  const ok=await saveYm(d.getFullYear(),d.getMonth(),doc=>{ if(k) doc.marks[d.getDate()]={k,memo:k==="etc"?(memo||""):""}; else delete doc.marks[d.getDate()]; });
+  if(ok) $("#ydlg").close();
+}
+$("#yForm").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.hasAttribute("data-yclose")){ $("#ydlg").close(); return; }
+  if(b.dataset.yk){ const k=b.dataset.yk; if(k==="etc"){ ydraft.k="etc"; drawYMark(); } else commitYMark(k); return; }
+  if(b.id==="yClear"){ commitYMark(""); return; }
+  if(b.id==="ySave"){ commitYMark("etc", $("#yMemo").value.trim()); }
+});
+$("#yForm").addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="yMemo"){ e.preventDefault(); commitYMark("etc", e.target.value.trim()); } });
 
 function selBarHTML(ev,y,m){
   const f=new Date(y,m,1), l=new Date(y,m+1,0);
@@ -779,6 +844,7 @@ document.addEventListener("click", async e=>{
   if(b.id==="editStaff"){ openStaffEditor(); return; }
   if(b.dataset.sel){ state.sel = state.sel===b.dataset.sel ? null : b.dataset.sel; render(); return; }
   if(b.id==="clearSel"){ state.sel=null; render(); return; }
+  if(b.dataset.ymark){ openYMark(b.dataset.ymark); return; }
   if(b.dataset.gomonth){ const d=parse(b.dataset.gomonth); state.y=d.getFullYear(); state.m=d.getMonth(); state.view="cal"; render(); window.scrollTo({top:0}); return; }
   if(b.id==="printBtn"){ window.print(); return; }
   if(b.dataset.goto){ const d=parse(b.dataset.goto); state.y=d.getFullYear(); state.m=d.getMonth(); render(); return; }
@@ -822,6 +888,8 @@ document.addEventListener("change", e=>{
   else if(el.id==="showTasks"){ state.showTasks=el.checked; lsSet("acad-showTasks",el.checked); render(); }
   else if(el.id==="whoSel"){ state.who=el.value; lsSet("acad-who",state.who); render(); }
   else if(el.id==="yySel"){ state.yy=+el.value; render(); }
+  else if(el.dataset.ynote){ const [y,m]=el.dataset.ynote.split("-").map(Number); const v=el.value;
+    saveYm(y,m-1,doc=>{ doc.note=v; }).then(ok=>{ if(ok) toast(`${m}월 메모를 저장했습니다.`); }); }
   else if(el.id==="ySel"){ state.y=+el.value; render(); }
   else if(el.id==="mSel"){ state.m=+el.value; render(); }
   else if(el.id==="period"){ state.period=el.value; render(); }
@@ -998,9 +1066,12 @@ sForm.addEventListener("click",async e=>{
       store.save({...cfg, types, v2:true}).catch(()=>{});
     }
     state.cfg = cfg || null;
-    state.events = docs.filter(d=>d.id!=="_config");
+    state.ym = Object.fromEntries(docs.filter(d=>d.id.startsWith("_ym_")).map(d=>[d.id,d]));
+    state.events = docs.filter(d=>!d.id.startsWith("_"));
     if(state.sel && !state.events.some(e=>e.id===state.sel)) state.sel=null;
-    render();
+    const ae=document.activeElement;
+    if(ae && ae.matches && ae.matches(".ynote")){ pendingRender=true; }
+    else render();
     if(first){ first=false; if(!state.user) openUserPicker(); }
     else if($("#udlg").open) openUserPicker();
   }, err=>{
