@@ -41,6 +41,14 @@ button.brand:hover{background:var(--soft)}
 .btn.small{padding:3px 8px;font-size:12px}
 .who{font-size:13px;color:var(--muted);border:0;background:none;text-decoration:underline dotted}
 .status{font-size:12px;padding:4px 10px;border-radius:99px;background:var(--soft);color:var(--muted);white-space:nowrap}
+.authbox{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.authbox .role{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.authbox .role.admin{background:#DDF7E3;color:#11632A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .authbox .role.admin{background:#173A22;color:#9BE7B0}}
+body.ro .mtd,body.ro .mdh,body.ro .mbar,body.ro .mm td button{cursor:default}
+body.ro .mtd:hover,body.ro .mdh:hover{background:transparent}
+body.ro .mbar:hover{filter:none}
+.ro-note{font-size:12.5px;color:var(--muted);margin:0 0 10px}
 .status.ok::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#22A35A;margin-right:6px}
 .status.demo{background:#FFF4C2;color:#5C4700}
 .status.err{background:#FDE2E2;color:#9B1C1C}
@@ -231,12 +239,15 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .mimp .st{color:var(--muted);margin-left:6px}
 .mimp .ow{color:var(--warn);font-weight:700} .mimp .nw{color:#1A9E44;font-weight:700}
 .mimp .tt{font-size:12px;color:var(--muted);margin-top:4px}
+@page{size:A4 landscape;margin:7mm}
+body.print-month .mohead,body.print-month .mohint{display:none!important}
+body.print-month .mosheet{border:0;padding:0;border-radius:0}
+body.print-month .mwrap{overflow:visible} body.print-month .mgrid{min-width:0}
+body.print-month .mtd{min-height:0;padding-bottom:4px}
 @media print{
-  @page{size:A4 landscape;margin:7mm}
-  .mohead,.mohint{display:none!important}
-  .mosheet{border:0;padding:0} .mgrid{min-width:0;border-color:#999} .mwrap{overflow:visible}
-  .mtd{min-height:0;font-size:10px} .mbar{font-size:10px} .mweek{break-inside:avoid}
-  .mnote{font-size:10px}
+  body.print-month main{padding:0;max-width:none;margin:0}
+  body.print-month .mosheet{break-inside:avoid;page-break-inside:avoid}
+  body.print-month .mgrid{border-color:#999}
 }
 /* 수업 회차 */
 .csec{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
@@ -362,15 +373,14 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
   <button type="button" class="brand" id="homeBtn" title="월간일정으로 이동">학원 행사·홍보 일정표<small>설명회 · 체험수업 · 개강 모집 · 특강 · 이벤트</small></button>
   <div class="tabs" role="group" aria-label="보기 전환">
     <button data-view="month" aria-pressed="true">월간일정</button>
-    <button data-view="cal" aria-pressed="false">달력</button>
-    <button data-view="list" aria-pressed="false">행사 목록</button>
-    <button data-view="todo" aria-pressed="false">할 일</button>
-    <button data-view="year" aria-pressed="false">연간</button>
+    <button data-view="cal" aria-pressed="false">학원행사</button>
+    <button data-view="year" aria-pressed="false">연간일정</button>
     <button data-view="cnt" aria-pressed="false">수업 회차</button>
   </div>
   <button class="btn primary" id="addBtn">+ 행사 추가</button>
   <span class="status" id="status">연결 중…</span>
-  <button class="who" id="whoBtn" title="사용자 바꾸기"></button>
+  <button class="who" id="whoBtn" title="기록에 남길 이름 바꾸기"></button>
+  <span class="authbox" id="authBox"></span>
 </div>
 <div id="banner"></div>
 <main id="app"></main>
@@ -379,6 +389,7 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
 <dialog id="tdlg" style="width:min(560px,96vw)"><form class="dlg" method="dialog" id="tForm" novalidate></form></dialog>
 <dialog id="sdlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="sForm" novalidate></form></dialog>
 <dialog id="mdlg" style="width:min(620px,96vw)"><form class="dlg" method="dialog" id="mForm" novalidate></form></dialog>
+<dialog id="admdlg" style="width:min(480px,96vw)"><form class="dlg" method="dialog" id="admForm" novalidate></form></dialog>
 <dialog id="ydlg" style="width:min(380px,96vw)"><form class="dlg" method="dialog" id="yForm" novalidate></form></dialog>
 <dialog id="udlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="uForm" novalidate></form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -513,10 +524,28 @@ async function makeFirebaseStore(){
   const fs = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-firestore.js`);
   const au = await import(`https://www.gstatic.com/firebasejs/${V}/firebase-auth.js`);
   const app = initializeApp(firebaseConfig);
-  await au.signInAnonymously(au.getAuth(app));
+  const auth = au.getAuth(app);
+  await au.getRedirectResult(auth).catch(()=>{});
+  await new Promise(r=>{ const un=au.onAuthStateChanged(auth,()=>{ un(); r(); }); });
+  if(!auth.currentUser) await au.signInAnonymously(auth);
   const db = fs.initializeFirestore(app,{ignoreUndefinedProperties:true});
   const col = fs.collection(db,COLLECTION);
+  const ADM = "academyAdmins";
   return {
+    account(){ const u=auth.currentUser; return u && !u.isAnonymous ? {email:(u.email||"").toLowerCase(), name:u.displayName||""} : null; },
+    async login(){
+      const p=new au.GoogleAuthProvider(); p.setCustomParameters({prompt:"select_account"});
+      try{ await au.signInWithPopup(auth,p); }
+      catch(e){ if(/popup-blocked|operation-not-supported|web-storage/.test(e.code||"")) return au.signInWithRedirect(auth,p); throw e; }
+    },
+    async logout(){ await au.signOut(auth); },
+    async isAdmin(){
+      const a=this.account(); if(!a||!a.email) return false;
+      try{ await fs.getDoc(fs.doc(db,ADM,a.email)); return true; }catch(e){ return false; }
+    },
+    async listAdmins(){ const q=await fs.getDocs(fs.collection(db,ADM)); return q.docs.map(d=>({email:d.id, ...d.data()})); },
+    addAdmin(email,by){ return fs.setDoc(fs.doc(db,ADM,email), {addedBy:by||"", addedAt:Date.now()}); },
+    removeAdmin(email){ return fs.deleteDoc(fs.doc(db,ADM,email)); },
     subscribe(cb,onErr){ fs.onSnapshot(col, snap=>cb(snap.docs.map(d=>({...d.data(), id:d.id}))), onErr); },
     save(ev){ const {id,...data}=ev; return fs.setDoc(fs.doc(db,COLLECTION,id), data); },
     remove(id){ return fs.deleteDoc(fs.doc(db,COLLECTION,id)); }
@@ -546,12 +575,34 @@ function seed(){
 /* ---------- 상태 ---------- */
 const now=new Date();
 const state = {
-  events:[], types:DEFAULT_TYPES, view:"month", mo:{}, moKey:null, moPicked:false, y:now.getFullYear(), m:now.getMonth(),
+  events:[], types:DEFAULT_TYPES, canEdit:false, account:null, view:"month", mo:{}, moKey:null, moPicked:false, y:now.getFullYear(), m:now.getMonth(),
   showTasks: lsGet("acad-showTasks",true),
   hidden: lsGet("acad-hiddenTypes",[]),
   q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null, sel:null, ym:{}, yy:new Date().getFullYear(),
   user: lsGet("acad-user","")
 };
+/* ---------- 수정 권한 ---------- */
+const canEdit = () => state.canEdit;
+function guard(){ if(state.canEdit) return true; toast(state.account ? "이 계정은 관리자로 등록되어 있지 않아 읽기만 할 수 있어요." : "수정은 관리자만 할 수 있어요. 오른쪽 위 ‘관리자 로그인’을 눌러 주세요."); return false; }
+function lockForm(form){
+  form.querySelectorAll("input,textarea").forEach(el=>{ if(["checkbox","radio","date","time","color","file"].includes(el.type)) el.disabled=true; else el.readOnly=true; });
+  form.querySelectorAll("select").forEach(el=>el.disabled=true);
+  form.querySelectorAll("#saveBtn,#delBtn,#tplBtn,#addTask,[data-deltask]").forEach(el=>el.remove());
+  form.querySelectorAll("[data-staff]").forEach(el=>el.disabled=true);
+  const h=form.querySelector("header h2"); if(h) h.textContent="행사 정보";
+  const sc=form.querySelector(".scroll"); if(sc && !sc.querySelector(".ro-note")) sc.insertAdjacentHTML("afterbegin",`<p class="ro-note">읽기 전용입니다. 수정은 관리자만 할 수 있어요.</p>`);
+}
+function renderAuth(){
+  const box=$("#authBox"); if(!box) return;
+  $("#addBtn").hidden=!state.canEdit;
+  document.body.classList.toggle("ro", !state.canEdit);
+  $("#whoBtn").hidden=!state.canEdit;
+  if(DEMO){ box.innerHTML=""; return; }
+  const a=state.account;
+  if(state.canEdit) box.innerHTML=`<span class="role admin" title="${esc(a?.email||"")}">관리자</span><button type="button" class="btn small" id="admBtn">편집 권한</button><button type="button" class="btn small" id="logoutBtn">로그아웃</button>`;
+  else if(a) box.innerHTML=`<span class="role" title="${esc(a.email)}">읽기 전용 · ${esc(a.email)}</span><button type="button" class="btn small" id="logoutBtn">로그아웃</button>`;
+  else box.innerHTML=`<span class="role">읽기 전용</span><button type="button" class="btn small" id="loginBtn">관리자 로그인</button>`;
+}
 let pendingRender=false;
 document.addEventListener("focusout",e=>{ if(e.target.matches?.(".ynote") && pendingRender){ pendingRender=false; setTimeout(render,0); } });
 let store, draft=null, tdraft=null, autoFilled=false;
@@ -572,7 +623,8 @@ function evDays(ev){
 /* ---------- 렌더 ---------- */
 function render(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.view===state.view));
-  $("#whoBtn").textContent = state.user ? `${state.user} 님` : "사용자 선택";
+  $("#whoBtn").textContent = state.user ? `${state.user} 님` : "이름 선택";
+  renderAuth();
   const app=$("#app");
   curFocus=null;
   const fb=filterBarHTML();
@@ -592,11 +644,11 @@ function filterBarHTML(){
     ${state.types.map(t=>{ const on=!state.hidden.includes(t.key);
       return `<label class="chip${on?"":" off"}" style="background:${t.color};color:${inkFor(t.color)}"><input type="checkbox" data-legend="${esc(t.key)}" ${on?"checked":""}>${esc(t.name)}</label>`; }).join("")}
     <button type="button" class="btn small" id="allTypes">${all?"전체 해제":"전체 선택"}</button>
-    <button type="button" class="btn small" id="editTypes">메뉴 편집</button>
+    ${canEdit()?`<button type="button" class="btn small" id="editTypes">메뉴 편집</button>`:""}
     <span class="sep"></span>
     <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700">담당자
       <select class="whosel" id="whoSel"><option value="">모두</option>${(state.who&&!staffList().includes(state.who)?[...staffList(),state.who]:staffList()).map(n=>`<option ${n===state.who?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
-    <button type="button" class="btn small" id="editStaff">관리자 명단</button>
+    ${canEdit()?`<button type="button" class="btn small" id="editStaff">관리자 명단</button>`:""}
     ${state.view==="cal"?`<span class="sep"></span><label class="chip" style="border:1px dashed var(--line);font-weight:600"><input type="checkbox" id="showTasks" ${state.showTasks?"checked":""}>홍보 할 일 표시</label>`:""}
   </div>`;
 }
@@ -651,13 +703,13 @@ function yearHTML(){
     return `<div class="mm${y<Y?" prev":""}"><div class="mt">${y}년 ${m+1}월</div>
       <table><thead><tr>${[..."일월화수목금토"].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody><tr>${cells}</tr></tbody></table>
       <div class="notes">${notesH.length?`<div class="h">${notesH.join(" / ")}</div>`:""}${notesM.join("")}
-        <textarea class="ynote" data-ynote="${key}" rows="1" placeholder="${m+1}월 메모" aria-label="${y}년 ${m+1}월 메모">${esc(doc.note||"")}</textarea></div></div>`;
+        <textarea class="ynote" data-ynote="${key}" rows="1" ${canEdit()?"":"readonly"} placeholder="${canEdit()?`${m+1}월 메모`:""}" aria-label="${y}년 ${m+1}월 메모">${esc(doc.note||"")}</textarea></div></div>`;
   };
   const body=months.map(mmHTML).join("");
   return `<div class="yhead">
     <select class="ym" id="yySel" aria-label="연도">${ys.map(k=>`<option value="${k}" ${k===Y?"selected":""}>${k}년</option>`).join("")}</select>
     <div class="ylegend">${Object.entries(YKINDS).map(([k,K])=>`<span style="background:${K.color};color:${K.ink}">${K.name} ${cnt[k]}</span>`).join("")}</div>
-    <span class="hint">날짜를 누르면 표시를 고를 수 있어요.${noData?` · ${Y}년 공휴일 정보는 아직 없습니다.`:""}</span>
+    <span class="hint">${canEdit()?"날짜를 누르면 표시를 고를 수 있어요.":"읽기 전용입니다."}${noData?` · ${Y}년 공휴일 정보는 아직 없습니다.`:""}</span>
     <button type="button" class="btn small" id="printBtn" style="margin-left:auto">인쇄</button>
   </div><div class="yr">${body}</div>`;
 }
@@ -949,15 +1001,16 @@ function monthHTML(){
       <button type="button" class="btn" data-monav="1" aria-label="다음 달">›</button>
       ${key!==T.slice(0,7)?`<button type="button" class="btn small" id="moToday">이번 달</button>`:""}
       <span class="moacts">
-        <button type="button" class="btn primary" id="moUpload">한글 파일 올리기</button>
-        ${doc?`<button type="button" class="btn" id="moMeta">제목·공지 수정</button><button type="button" class="btn" id="printBtn">인쇄</button>`:""}
+        ${canEdit()?`<button type="button" class="btn primary" id="moUpload">한글 파일 올리기</button>`:""}
+        ${doc&&canEdit()?`<button type="button" class="btn" id="moMeta">제목·공지 수정</button>`:""}
+        ${doc?`<button type="button" class="btn" id="printBtn">인쇄</button>`:""}
       </span>
       <input type="file" id="moFile" accept=".hwp,.hwpx" multiple hidden>
     </div>`;
   if(!doc) return bar + `<div class="moempty">
       <h3>${moLabel(key)} 월간일정이 아직 없습니다.</h3>
-      <p>한글로 만든 월간 업무표를 올리면 날짜별로 자동으로 들어갑니다. 파일을 이 화면에 끌어다 놓아도 됩니다.</p>
-      <div class="acts"><button type="button" class="btn primary" id="moUpload2">한글 파일 올리기</button><button type="button" class="btn" id="moNew">직접 만들기</button></div>
+      ${canEdit()?`<p>한글로 만든 월간 업무표를 올리면 날짜별로 자동으로 들어갑니다. 파일을 이 화면에 끌어다 놓아도 됩니다.</p>
+      <div class="acts"><button type="button" class="btn primary" id="moUpload2">한글 파일 올리기</button><button type="button" class="btn" id="moNew">직접 만들기</button></div>`:`<p>관리자가 올리면 여기에 표시됩니다.</p>`}
     </div>`;
   const [s, e] = moRange(key, doc);
   const [, mm] = key.split("-").map(Number);
@@ -994,7 +1047,7 @@ function monthHTML(){
       ${weeks}
     </div></div>
     ${notes.length?`<div class="monotes">${notes.map(n => `<div class="mnote">${esc(n).replace(/\n/g, "<br>")}</div>`).join("")}</div>`:""}
-    <p class="mohint">날짜 칸을 누르면 업무를, 색 막대를 누르면 여러 날 일정을 고칠 수 있어요.</p>
+    ${canEdit()?`<p class="mohint">날짜 칸을 누르면 업무를, 색 막대를 누르면 여러 날 일정을 고칠 수 있어요.</p>`:""}
   </section>`;
 }
 
@@ -1060,6 +1113,7 @@ function drawMo(){
     <div class="scroll">${body}</div><footer><span class="info"></span>${foot}</footer>`;
 }
 async function importFiles(files){
+  if(!guard()) return;
   files = [...files].filter(f => /\.hwpx?$/i.test(f.name));
   if(!files.length){ toast("한글 파일(.hwp, .hwpx)만 올릴 수 있습니다."); return; }
   toast("한글 파일을 읽는 중입니다…");
@@ -1186,13 +1240,13 @@ function cntHTML(){
     ${W.map((w,i)=>`<tr><td class="lb ${wcls(w)}">${WN[i]}</td>${mc.map(r=>{ const v=r.c[w]; return `<td class="${v>=5?"n5":v<=3?"nlo":""}">${v}</td>`; }).join("")}</tr>`).join("")}
     <tr><td class="lb" style="color:var(--muted);font-weight:600">휴무</td>${mc.map(r=>`<td style="color:var(--muted)">${r.off||""}</td>`).join("")}</tr>
   </tbody></table></div>
-  <div class="clegend"><span><b class="g">5</b> 평소보다 많은 달</span><span><b class="r">3 이하</b> 휴무 등으로 적은 달</span><span>공휴일은 빼지 않고, 연간 탭에서 휴무로 표시한 날만 뺍니다.</span></div>
+  <div class="clegend"><span><b class="g">5</b> 평소보다 많은 달</span><span><b class="r">3 이하</b> 휴무 등으로 적은 달</span><span>공휴일은 빼지 않고, 연간일정 탭에서 휴무로 표시한 날만 뺍니다.</span></div>
   ${shifted.some(Boolean)?`<div class="clegend"><span><b>*</b> 월말 개강일 때문에 기간이 달라진 달: ${months.map(([y,m],i)=>shifted[i]?`${y<Y?String(y).slice(2)+".":""}${m}월 ${shifted[i]}`:"").filter(Boolean).join(" · ")}</span></div>`:""}`;
 
   /* 기간 행 공통 */
   const rowHTML=(label,list,y,mo,cols,kindName)=>{
     const s=pick(list,y,mo);
-    if(!s) return `<tr><td class="lb">${label}</td><td class="na" colspan="${cols.length+1}">연간 탭에서 ${kindName}을 표시하면 계산됩니다.</td></tr>`;
+    if(!s) return `<tr><td class="lb">${label}</td><td class="na" colspan="${cols.length+1}">연간일정 탭에서 ${kindName}을 표시하면 계산됩니다.</td></tr>`;
     const e=periodOf(list,s);
     if(!e) return `<tr><td class="lb">${label}</td><td class="per"><b>${fmt(s)} ~</b></td><td class="na" colspan="${cols.length}">다음 ${kindName}을 표시하면 계산됩니다.</td></tr>`;
     const {c,off}=count(s,e), wk=Math.ceil((diff(s,e)+1)/7);
@@ -1221,8 +1275,8 @@ function cntHTML(){
 
   return `<div class="yhead">
     <select class="ym" id="yySel" aria-label="연도">${ys.map(k=>`<option value="${k}" ${k===Y?"selected":""}>${k}년</option>`).join("")}</select>
-    <span class="hint">연간 탭의 휴무·개강일 표시로 계산합니다.</span>
-    <button type="button" class="btn small" data-view="year" style="margin-left:auto">연간 탭에서 표시하기</button>
+    <span class="hint">연간일정 탭의 휴무·개강일 표시로 계산합니다.</span>
+    <button type="button" class="btn small" data-view="year" style="margin-left:auto">연간일정 탭에서 보기</button>
     <button type="button" class="btn small" id="printBtn">인쇄</button>
   </div>
   <section class="csec"><h3>월별 요일 수</h3><p class="sub">${Y-1}년 9월 ~ ${Y}년 12월 · 수업월 기준: 16일 이후의 개강일부터 그 달 말일까지는 다음 달로 셉니다. 기타 표시일은 그대로 포함합니다.</p>${t1}</section>
@@ -1403,7 +1457,7 @@ function todoViewHTML(){
 function openEditor(id, date, focusTask){
   autoFilled=false;
   if(id){ const ev=state.events.find(e=>e.id===id); if(!ev) return; draft=clone(ev); draft.tasks ||= []; }
-  else draft={id:uid(), title:"", type:(state.types.find(t=>!state.hidden.includes(t.key)&&!t.noPromo)||state.types[0]||{key:"etc"}).key, date:date||todayStr(), endDate:"", time:"", place:"", staff:"", grades:"", memo:"", tasks:[]};
+  else { if(!guard()) return; draft={id:uid(), title:"", type:(state.types.find(t=>!state.hidden.includes(t.key)&&!t.noPromo)||state.types[0]||{key:"etc"}).key, date:date||todayStr(), endDate:"", time:"", place:"", staff:"", grades:"", memo:"", tasks:[]}; }
   drawEditor(!id);
   $("#dlg").showModal();
   if(focusTask){ const c=document.querySelector(`.tcard[data-tid="${focusTask}"]`); if(c){ c.scrollIntoView({block:"center"}); c.classList.add("flash"); } }
@@ -1443,6 +1497,7 @@ function drawEditor(isNew){
     <button type="button" class="btn" data-close>취소</button>
     <button type="button" class="btn primary" id="saveBtn">저장</button>
   </footer>`;
+  if(!canEdit()) lockForm($("#dlgForm"));
 }
 const splitNames = s => String(s||"").split(/[,，、]/).map(x=>x.trim()).filter(Boolean);
 function staffPickHTML(str){
@@ -1468,6 +1523,7 @@ function taskCard(t){
 
 /* ---------- 이벤트 처리 ---------- */
 async function toggleTask(evId, tId, done){
+  if(!guard()){ render(); return; }
   const ev=state.events.find(e=>e.id===evId); if(!ev) return;
   const next=clone(ev);
   const t=next.tasks.find(x=>x.id===tId); if(!t) return;
@@ -1486,13 +1542,18 @@ document.addEventListener("click", async e=>{
   if(b.id==="clearSel"){ state.sel=null; render(); return; }
   if(b.dataset.monav){ state.moKey=moShift(state.moKey||todayStr().slice(0,7), +b.dataset.monav); render(); return; }
   if(b.id==="moToday"){ state.moKey=todayStr().slice(0,7); render(); return; }
+  if(["moUpload","moUpload2","moMeta","moNew","editTypes","editStaff"].includes(b.id) && !guard()) return;
+  if((b.dataset.moday||b.dataset.mobar!=null&&!b.closest("dialog")) && !canEdit()) return;
+  if(b.id==="loginBtn"){ adminLogin(); return; }
+  if(b.id==="logoutBtn"){ adminLogout(); return; }
+  if(b.id==="admBtn"){ openAdmins(); return; }
   if(b.id==="moUpload"||b.id==="moUpload2"){ $("#moFile").click(); return; }
   if(b.id==="moMeta"){ openMo("meta"); return; }
   if(b.id==="moNew"){ const key=state.moKey, [, mm]=key.split("-").map(Number), [s0, e0]=moRange(key, null);
     if(await saveMo(key, d=>{ d.title=`${mm}월 업무`; d.start=s0; d.weeks=(diff(s0,e0)+1)/7; })) toast(`${mm}월 월간일정을 만들었습니다. 날짜 칸을 눌러 업무를 넣어 보세요.`); return; }
   if(b.dataset.moday){ openMo("day", b.dataset.moday); return; }
   if(b.dataset.mobar!=null && !b.closest("dialog")){ openMo("bar", +b.dataset.mobar); return; }
-  if(b.dataset.ymark){ openYMark(b.dataset.ymark); return; }
+  if(b.dataset.ymark){ if(guard()) openYMark(b.dataset.ymark); return; }
   if(b.dataset.gomonth){ const d=parse(b.dataset.gomonth); state.y=d.getFullYear(); state.m=d.getMonth(); state.view="cal"; render(); window.scrollTo({top:0}); return; }
   if(b.id==="printBtn"){ window.print(); return; }
   if(b.dataset.goto){ const d=parse(b.dataset.goto); state.y=d.getFullYear(); state.m=d.getMonth(); render(); return; }
@@ -1528,11 +1589,26 @@ function focusFrom(target){
 document.addEventListener("mouseover",e=>focusFrom(e.target));
 document.addEventListener("focusin",e=>focusFrom(e.target));
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && state.sel && !document.querySelector("dialog[open]")){ state.sel=null; render(); } });
+/* 월간일정: 한 장에 맞춰 인쇄 */
+const PRINT_W=1400, PAGE_W=1060, PAGE_H=725;   // A4 가로, 여백 7mm 기준(px)
+function fitMonthPrint(){
+  const sh=document.querySelector(".mosheet"); if(state.view!=="month"||!sh) return;
+  document.body.classList.add("print-month");
+  sh.style.zoom=""; sh.style.width=PRINT_W+"px";
+  const h=sh.scrollHeight;
+  sh.style.zoom=String(Math.min(PAGE_W/PRINT_W, PAGE_H/h));
+}
+function unfitMonthPrint(){
+  document.body.classList.remove("print-month");
+  const sh=document.querySelector(".mosheet"); if(sh){ sh.style.zoom=""; sh.style.width=""; }
+}
+window.addEventListener("beforeprint", fitMonthPrint);
+window.addEventListener("afterprint", unfitMonthPrint);
 $("#homeBtn").onclick=()=>{ state.sel=null; state.view="month"; state.moKey=pickRecentMonth(); state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
 /* 월간일정: 파일 끌어다 놓기 */
-document.addEventListener("dragover",e=>{ if(state.view!=="month"||document.querySelector("dialog[open]")) return; if([...(e.dataTransfer?.types||[])].includes("Files")){ e.preventDefault(); $("#app").classList.add("modrop"); } });
+document.addEventListener("dragover",e=>{ if(state.view!=="month"||!canEdit()||document.querySelector("dialog[open]")) return; if([...(e.dataTransfer?.types||[])].includes("Files")){ e.preventDefault(); $("#app").classList.add("modrop"); } });
 document.addEventListener("dragleave",e=>{ if(!e.relatedTarget) $("#app").classList.remove("modrop"); });
-document.addEventListener("drop",e=>{ $("#app").classList.remove("modrop"); if(state.view!=="month"||!e.dataTransfer?.files?.length) return; e.preventDefault(); importFiles(e.dataTransfer.files); });
+document.addEventListener("drop",e=>{ $("#app").classList.remove("modrop"); if(state.view!=="month"||!canEdit()||!e.dataTransfer?.files?.length) return; e.preventDefault(); importFiles(e.dataTransfer.files); });
 
 document.addEventListener("change", e=>{
   const el=e.target;
@@ -1542,7 +1618,7 @@ document.addEventListener("change", e=>{
   else if(el.id==="moSel"){ state.moKey=el.value; render(); }
   else if(el.id==="moFile"){ const fs=[...el.files]; el.value=""; if(fs.length) importFiles(fs); }
   else if(el.id==="yySel"){ state.yy=+el.value; render(); }
-  else if(el.dataset.ynote){ const [y,m]=el.dataset.ynote.split("-").map(Number); const v=el.value;
+  else if(el.dataset.ynote && canEdit()){ const [y,m]=el.dataset.ynote.split("-").map(Number); const v=el.value;
     saveYm(y,m-1,doc=>{ doc.note=v; }).then(ok=>{ if(ok) toast(`${m}월 메모를 저장했습니다.`); }); }
   else if(el.id==="ySel"){ state.y=+el.value; render(); }
   else if(el.id==="mSel"){ state.m=+el.value; render(); }
@@ -1637,6 +1713,59 @@ tForm.addEventListener("click",async e=>{
   }
 });
 
+/* ---------- 관리자 로그인 ---------- */
+async function adminLogin(){
+  try{ await store.login(); location.reload(); }
+  catch(e){
+    const c=e.code||"";
+    if(/popup-closed|cancelled-popup/.test(c)) return;
+    const msg = /operation-not-allowed/.test(c) ? "Firebase 콘솔 > Authentication > 로그인 방법에서 ‘Google’을 사용 설정해 주세요."
+      : /unauthorized-domain/.test(c) ? `Firebase 콘솔 > Authentication > 설정 > 승인된 도메인에 ${location.hostname} 를 추가해 주세요.`
+      : "로그인하지 못했습니다.";
+    $("#banner").innerHTML=`<div class="banner err">${esc(msg)} (${esc(c||e.message)})</div>`;
+  }
+}
+async function adminLogout(){ try{ await store.logout(); }catch{} location.reload(); }
+let admList=[];
+async function openAdmins(){
+  if(!guard()) return;
+  $("#admForm").innerHTML=`<header><h2>편집 권한</h2><button type="button" class="btn" data-aclose>닫기</button></header><div class="scroll"><p class="hint">불러오는 중…</p></div>`;
+  $("#admdlg").showModal();
+  try{ admList=(await store.listAdmins()).sort((a,b)=>a.email.localeCompare(b.email)); drawAdmins(); }
+  catch(err){ $("#admForm .scroll").innerHTML=`<p class="hint" style="color:var(--warn)">명단을 불러오지 못했습니다. Firestore 보안 규칙을 확인해 주세요. (${esc(err.code||err.message)})</p>`; }
+}
+function drawAdmins(){
+  const me=state.account?.email;
+  $("#admForm").innerHTML=`<header><h2>편집 권한</h2><button type="button" class="btn" data-aclose>닫기</button></header>
+  <div class="scroll">
+    <p class="hint" style="margin:0 0 10px">여기 등록된 Google 계정만 일정을 고칠 수 있어요. 나머지 사람은 링크로 읽기만 합니다.</p>
+    ${admList.map(a=>`<div class="trow" style="grid-template-columns:minmax(0,1fr) auto"><span style="font-weight:600;word-break:break-all">${esc(a.email)}${a.email===me?` <span class="tag">나</span>`:""}</span>
+      <button type="button" class="btn small danger" data-adel="${esc(a.email)}">삭제</button></div>`).join("") || `<p class="hint">추가로 등록된 계정이 없습니다.</p>`}
+    <div style="display:flex;gap:8px;margin-top:12px"><input type="email" id="admEmail" placeholder="example@gmail.com" style="flex:1;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:7px 9px">
+      <button type="button" class="btn primary" id="admAdd">추가</button></div>
+    <p class="hint" style="margin-top:10px">보안 규칙에 적어 둔 대표 계정은 이 목록에 없어도 항상 관리자입니다.</p>
+  </div>`;
+}
+$("#admForm").addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  if(b.hasAttribute("data-aclose")){ $("#admdlg").close(); return; }
+  if(b.id==="admAdd"){
+    const v=$("#admEmail").value.trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ toast("이메일 주소를 확인해 주세요."); return; }
+    if(admList.some(a=>a.email===v)){ toast("이미 등록된 계정입니다."); return; }
+    try{ await store.addAdmin(v, state.user||state.account?.email); admList.push({email:v}); admList.sort((a,b)=>a.email.localeCompare(b.email)); drawAdmins(); toast(`${v} 계정에 편집 권한을 주었습니다.`); }
+    catch(err){ toast("추가하지 못했습니다: "+(err.code||err.message)); }
+    return;
+  }
+  if(b.dataset.adel){
+    const v=b.dataset.adel;
+    if(!confirm(v===state.account?.email ? "내 계정의 편집 권한을 지울까요? 대표 계정이 아니면 더 이상 수정할 수 없게 됩니다." : `${v} 계정의 편집 권한을 지울까요?`)) return;
+    try{ await store.removeAdmin(v); admList=admList.filter(a=>a.email!==v); drawAdmins(); toast("삭제했습니다."); }
+    catch(err){ toast("삭제하지 못했습니다: "+(err.code||err.message)); }
+  }
+});
+$("#admForm").addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="admEmail"){ e.preventDefault(); $("#admAdd").click(); } });
+
 /* ---------- 사용자 선택 ---------- */
 function openUserPicker(){
   const st=staffList();
@@ -1695,11 +1824,15 @@ sForm.addEventListener("click",async e=>{
 (async function start(){
   const st=$("#status");
   if(DEMO){
-    store=makeLocalStore();
+    store=makeLocalStore(); state.canEdit=!/[?&]viewer\b/.test(location.search);
     st.className="status demo"; st.textContent="데모 모드";
     $("#banner").innerHTML=`<div class="banner">지금은 데모 모드라 이 브라우저에만 저장됩니다. 파일 상단의 firebaseConfig 에 Firebase 정보를 넣으면 팀 전체가 같은 일정을 실시간으로 함께 씁니다. 예시 일정은 업로드해 주신 표에서 가져왔습니다.</div>`;
   } else {
-    try{ store=await makeFirebaseStore(); st.className="status ok"; st.textContent="실시간 공유 중"; }
+    try{
+      store=await makeFirebaseStore(); st.className="status ok"; st.textContent="실시간 공유 중";
+      state.account=store.account(); state.canEdit=await store.isAdmin();
+      if(state.account && !state.canEdit) $("#banner").innerHTML=`<div class="banner">${esc(state.account.email)} 계정은 관리자로 등록되어 있지 않아 읽기만 할 수 있어요. 관리자에게 편집 권한을 요청해 주세요.</div>`;
+    }
     catch(err){
       st.className="status err"; st.textContent="연결 실패";
       const hint = /admin-restricted|operation-not-allowed/.test(err.code||err.message) ? "Firebase 콘솔 > Authentication > 로그인 방법에서 ‘익명’을 사용 설정해 주세요." : "firebaseConfig 값과 인터넷 연결을 확인해 주세요.";
@@ -1728,7 +1861,7 @@ sForm.addEventListener("click",async e=>{
     const ae=document.activeElement;
     if(ae && ae.matches && ae.matches(".ynote")){ pendingRender=true; }
     else render();
-    if(first){ first=false; if(!state.user) openUserPicker(); }
+    if(first){ first=false; if(!state.user && state.canEdit) openUserPicker(); }
     else if($("#udlg").open) openUserPicker();
   }, err=>{
     st.className="status err"; st.textContent="권한 오류";
