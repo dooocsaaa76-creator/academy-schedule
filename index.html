@@ -170,6 +170,29 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
   .yr{grid-template-columns:repeat(4,1fr);gap:8px} .mm{break-inside:avoid;border-color:#bbb}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* 수업 회차 */
+.csec{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.csec h3{margin:0 0 2px;font-size:16px}
+.csec p.sub{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+.cwrap{overflow-x:auto}
+.ctbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+.ctbl th,.ctbl td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:center;white-space:nowrap}
+.ctbl thead th{background:var(--head);color:var(--head-ink);font-size:13px;font-weight:800}
+.ctbl thead th.prev{background:#FFF1C9;color:#5C4700}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ctbl thead th.prev{background:#3B3420;color:#F3DFA2}}
+.ctbl thead th.grp{border-left:2px solid var(--paper)}
+.ctbl td.lb,.ctbl th.lb{text-align:left;font-weight:800;position:sticky;left:0;background:var(--paper);z-index:1}
+.ctbl thead th.lb{background:var(--head)}
+.ctbl td.per{text-align:left;font-size:12.5px;color:var(--muted)}
+.ctbl td.per b{color:var(--ink);font-weight:700;font-size:13.5px}
+.ctbl td.gs{border-left:2px solid var(--line)}
+.ctbl .sa{color:var(--sat)} .ctbl .su{color:var(--sun)}
+.ctbl td.n5{font-weight:800;color:#1A9E44}
+.ctbl td.nlo{font-weight:800;color:var(--warn)}
+.ctbl td.na{color:var(--muted);font-size:12.5px;text-align:left}
+.ctbl td.big{font-weight:800;font-size:15px}
+.clegend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.clegend b.g{color:#1A9E44} .clegend b.r{color:var(--warn)}
 /* 사이드 */
 .side{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px;position:sticky;top:84px}
 .side h3{margin:0 0 4px;font-size:15px}
@@ -274,6 +297,7 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
     <button data-view="list" aria-pressed="false">행사 목록</button>
     <button data-view="todo" aria-pressed="false">할 일</button>
     <button data-view="year" aria-pressed="false">연간</button>
+    <button data-view="cnt" aria-pressed="false">수업 회차</button>
   </div>
   <button class="btn primary" id="addBtn">+ 행사 추가</button>
   <span class="status" id="status">연결 중…</span>
@@ -471,6 +495,7 @@ function render(){
   if(state.view==="cal") app.innerHTML = fb+`<div class="layout"><div>${calHTML()}</div>${sideHTML()}</div>`;
   else if(state.view==="list") app.innerHTML = fb+listHTML();
   else if(state.view==="year") app.innerHTML = yearHTML();
+  else if(state.view==="cnt") app.innerHTML = cntHTML();
   else app.innerHTML = fb+todoViewHTML();
   if(state.view==="list"){ const q=$("#q"); if(q && renderListFocus){ q.focus(); q.setSelectionRange(q.value.length,q.value.length); } }
 }
@@ -496,6 +521,7 @@ const YKINDS = {
   off:{name:"휴무",            color:"#2BD94A", ink:"#082E0E"},
   q2: {name:"2개월 분기 개강일", color:"#2EE6E6", ink:"#003838"},
   q3: {name:"3개월 분기 개강일", color:"#A855F7", ink:"#FFFFFF"},
+  q23:{name:"2·3개월 동시 개강일", color:"linear-gradient(180deg,#2EE6E6 0 62%,#A855F7 62% 100%)", ink:"#003838"},
   etc:{name:"기타",            color:"#FFB648", ink:"#3A2400"},
 };
 const ymId = (y,m) => `_ym_${y}-${pad(m+1)}`;
@@ -504,7 +530,7 @@ function yearHTML(){
   const Y=state.yy, cy=new Date().getFullYear(), T=todayStr();
   const ys=[]; for(let k=Math.min(cy-1,Y);k<=Math.max(cy+2,Y);k++) ys.push(k);
   const months=[...[8,9,10,11].map(m=>[Y-1,m]), ...Array.from({length:12},(_,m)=>[Y,m])];
-  const cnt={off:0,q2:0,q3:0,etc:0};
+  const cnt={off:0,q2:0,q3:0,q23:0,etc:0};
   const noData = !Object.keys(HOLIDAYS).some(k=>k.startsWith(Y+"-"));
   const mmHTML=([y,m])=>{
     const first=new Date(y,m,1).getDay(), n=new Date(y,m+1,0).getDate();
@@ -589,6 +615,97 @@ $("#yForm").addEventListener("click",e=>{
   if(b.id==="ySave"){ commitYMark("etc", $("#yMemo").value.trim()); }
 });
 $("#yForm").addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="yMemo"){ e.preventDefault(); commitYMark("etc", e.target.value.trim()); } });
+
+/* ---------- 수업 회차 ---------- */
+function markIndex(){
+  const kinds={};
+  for(const doc of Object.values(state.ym)){
+    const ym=doc.id.slice(4);
+    for(const [d,mk] of Object.entries(doc.marks||{})) if(YKINDS[mk?.k]) kinds[`${ym}-${pad(+d)}`]=mk.k;
+  }
+  return kinds;
+}
+function cntHTML(){
+  const Y=state.yy, cy=new Date().getFullYear();
+  const ys=[]; for(let k=Math.min(cy-1,Y);k<=Math.max(cy+2,Y);k++) ys.push(k);
+  const kinds=markIndex();
+  const isOff=d=>kinds[d]==="off";
+  const starts3=Object.keys(kinds).filter(d=>kinds[d]==="q3"||kinds[d]==="q23").sort();
+  const starts2=Object.keys(kinds).filter(d=>kinds[d]==="q2"||kinds[d]==="q23").sort();
+  const count=(a,b)=>{ const c=[0,0,0,0,0,0,0]; let off=0; for(let d=a; d<=b; d=addDays(d,1)){ if(isOff(d)) off++; else c[parse(d).getDay()]++; } return {c,off}; };
+  const W=[1,2,3,4,5,6,0], WN=["월","화","수","목","금","토","일"];
+  const wcls=w=>w===6?"sa":w===0?"su":"";
+  const fmt=d=>{ const x=parse(d); return `${x.getFullYear()!==Y?String(x.getFullYear()).slice(2)+".":""}${x.getMonth()+1}/${x.getDate()}(${dow(d)})`; };
+  const pick=(list,y,mo)=>{ const t=`${y}-${pad(mo)}-01`; let best=null,bd=99;
+    for(const d of list){ const k=Math.abs(diff(d,t)); if(k<bd){bd=k;best=d;} } return bd<=31?best:null; };
+  const periodOf=(list,s)=>{ const nx=list[list.indexOf(s)+1]; return nx?addDays(nx,-1):null; };
+
+  /* 1. 월별 요일 수 */
+  const months=[...[9,10,11,12].map(m=>[Y-1,m]), ...Array.from({length:12},(_,i)=>[Y,i+1])];
+  /* 수업월: 16일 이후 개강일부터 그 달 말일까지는 다음 달로 계산 */
+  const lateStart={};
+  for(const d of Object.keys(kinds)) if(["q2","q3","q23"].includes(kinds[d]) && parse(d).getDate()>15){
+    const k=d.slice(0,7); if(!lateStart[k] || d<lateStart[k]) lateStart[k]=d; }
+  const classMonth=d=>{ const k=d.slice(0,7), ls=lateStart[k];
+    if(ls && d>=ls){ const x=parse(d); return ymd(new Date(x.getFullYear(),x.getMonth()+1,1)).slice(0,7); } return k; };
+  const mkKey=([y,m])=>`${y}-${pad(m)}`;
+  const acc={}; months.forEach(mm=>acc[mkKey(mm)]={c:[0,0,0,0,0,0,0],off:0,from:null,to:null});
+  const [fy,fm]=months[0], [ly,lm]=months[months.length-1];
+  for(let d=ymd(new Date(fy,fm-2,1)); d<=ymd(new Date(ly,lm,0)); d=addDays(d,1)){
+    const a=acc[classMonth(d)]; if(!a) continue;
+    if(!a.from) a.from=d; a.to=d;
+    if(isOff(d)) a.off++; else a.c[parse(d).getDay()]++;
+  }
+  const mc=months.map(mm=>acc[mkKey(mm)]);
+  const shifted=months.map(([y,m])=>{ const a=acc[`${y}-${pad(m)}`]; const f=`${y}-${pad(m)}-01`, l=ymd(new Date(y,m,0));
+    return (a.from&&a.from<f) || (a.to&&a.to<l) ? `${fmt(a.from)}~${fmt(a.to)}` : ""; });
+  const t1=`<div class="cwrap"><table class="ctbl"><thead><tr><th class="lb">요일</th>${months.map(([y,m],i)=>`<th class="${y<Y?"prev":""}"${shifted[i]?` title="${shifted[i]}"`:""}>${y<Y?`${String(y).slice(2)}.`:""}${m}월${shifted[i]?"*":""}</th>`).join("")}</tr></thead><tbody>
+    ${W.map((w,i)=>`<tr><td class="lb ${wcls(w)}">${WN[i]}</td>${mc.map(r=>{ const v=r.c[w]; return `<td class="${v>=5?"n5":v<=3?"nlo":""}">${v}</td>`; }).join("")}</tr>`).join("")}
+    <tr><td class="lb" style="color:var(--muted);font-weight:600">휴무</td>${mc.map(r=>`<td style="color:var(--muted)">${r.off||""}</td>`).join("")}</tr>
+  </tbody></table></div>
+  <div class="clegend"><span><b class="g">5</b> 평소보다 많은 달</span><span><b class="r">3 이하</b> 휴무 등으로 적은 달</span><span>공휴일은 빼지 않고, 연간 탭에서 휴무로 표시한 날만 뺍니다.</span></div>
+  ${shifted.some(Boolean)?`<div class="clegend"><span><b>*</b> 월말 개강일 때문에 기간이 달라진 달: ${months.map(([y,m],i)=>shifted[i]?`${y<Y?String(y).slice(2)+".":""}${m}월 ${shifted[i]}`:"").filter(Boolean).join(" · ")}</span></div>`:""}`;
+
+  /* 기간 행 공통 */
+  const rowHTML=(label,list,y,mo,cols,kindName)=>{
+    const s=pick(list,y,mo);
+    if(!s) return `<tr><td class="lb">${label}</td><td class="na" colspan="${cols.length+1}">연간 탭에서 ${kindName}을 표시하면 계산됩니다.</td></tr>`;
+    const e=periodOf(list,s);
+    if(!e) return `<tr><td class="lb">${label}</td><td class="per"><b>${fmt(s)} ~</b></td><td class="na" colspan="${cols.length}">다음 ${kindName}을 표시하면 계산됩니다.</td></tr>`;
+    const {c,off}=count(s,e), wk=Math.ceil((diff(s,e)+1)/7);
+    return `<tr><td class="lb">${label}</td><td class="per"><b>${fmt(s)} ~ ${fmt(e)}</b><br>${wk}주${off?` · 휴무 ${off}일 제외`:""}</td>
+      ${cols.map((f,i)=>`<td class="${f.g?"gs ":""}${f.big?"big":""}">${f.v(c)}</td>`).join("")}</tr>`;
+  };
+  const one=[1,2,3,4,5].map((w,i)=>({h:WN[i], v:c=>c[w], g:i===0}));
+  const two=[["월금",1,5],["월수",1,3],["수금",3,5],["화목",2,4]].map(([h,a,b],i)=>({h, v:c=>c[a]+c[b], g:i===0, big:true}));
+
+  /* 2. 3개월반 */
+  const qs=[[Y-1,12],[Y,3],[Y,6],[Y,9],[Y,12]];
+  const c3=[...one,...two];
+  const t2=`<div class="cwrap"><table class="ctbl"><thead>
+    <tr><th class="lb" rowspan="2">분기</th><th rowspan="2">기간</th><th class="grp" colspan="5">주1회반</th><th class="grp" colspan="4">주2회반</th></tr>
+    <tr>${c3.map(f=>`<th class="${f.g?"grp":""}">${f.h}</th>`).join("")}</tr></thead><tbody>
+    ${qs.map(([y,mo])=>rowHTML(`${y<Y?`${String(y).slice(2)}년 `:""}${mo}월 분기`, starts3, y, mo, c3, "3개월 분기 개강일")).join("")}
+  </tbody></table></div>`;
+
+  /* 3. 2개월반 */
+  const bs=[1,3,5,7,9,11].map(m=>[Y,m]);
+  const t3=`<div class="cwrap"><table class="ctbl"><thead>
+    <tr><th class="lb" rowspan="2">반</th><th rowspan="2">기간</th><th class="grp" colspan="4">주2회반</th></tr>
+    <tr>${two.map(f=>`<th class="${f.g?"grp":""}">${f.h}</th>`).join("")}</tr></thead><tbody>
+    ${bs.map(([y,mo])=>rowHTML(`${mo}월반`, starts2, y, mo, two, "2개월 분기 개강일")).join("")}
+  </tbody></table></div>`;
+
+  return `<div class="yhead">
+    <select class="ym" id="yySel" aria-label="연도">${ys.map(k=>`<option value="${k}" ${k===Y?"selected":""}>${k}년</option>`).join("")}</select>
+    <span class="hint">연간 탭의 휴무·개강일 표시로 계산합니다.</span>
+    <button type="button" class="btn small" data-view="year" style="margin-left:auto">연간 탭에서 표시하기</button>
+    <button type="button" class="btn small" id="printBtn">인쇄</button>
+  </div>
+  <section class="csec"><h3>월별 요일 수</h3><p class="sub">${Y-1}년 9월 ~ ${Y}년 12월 · 수업월 기준: 16일 이후의 개강일부터 그 달 말일까지는 다음 달로 셉니다. 기타 표시일은 그대로 포함합니다.</p>${t1}</section>
+  <section class="csec"><h3>3개월반 분기별 회차</h3><p class="sub">3개월(또는 2·3개월 동시) 개강일부터 다음 3개월 개강일 전날까지</p>${t2}</section>
+  <section class="csec"><h3>2개월반 회차</h3><p class="sub">2개월(또는 2·3개월 동시) 개강일부터 다음 2개월 개강일 전날까지</p>${t3}</section>`;
+}
 
 function selBarHTML(ev,y,m){
   const f=new Date(y,m,1), l=new Date(y,m+1,0);
