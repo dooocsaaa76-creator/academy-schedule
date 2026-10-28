@@ -172,6 +172,72 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
   .yr{grid-template-columns:repeat(4,1fr);gap:8px} .mm{break-inside:avoid;border-color:#bbb}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+/* 월간일정 */
+:root{--mb-open:#CDF3F6;--mb-open-ink:#04535B;--mb-exam:#FFEDA8;--mb-exam-ink:#5E4400;--mb-off:#FFD6D6;--mb-off-ink:#8E1717;--mb-end:#E6D9FF;--mb-end-ink:#46278F;--mb-etc:#E2E8F1;--mb-etc-ink:#26364D}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--mb-open:#0F3C41;--mb-open-ink:#9BF1F7;--mb-exam:#3D3311;--mb-exam-ink:#FFE38F;--mb-off:#4A1D1D;--mb-off-ink:#FFB8B8;--mb-end:#2F2453;--mb-end-ink:#D3C2FF;--mb-etc:#26303D;--mb-etc-ink:#CAD7E9}}
+.mohead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.mohead .moacts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.mosheet{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 14px 10px}
+.motitle{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 2px 12px}
+.motitle h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.motitle .sub{font-size:12px;color:var(--muted)}
+.mwrap{overflow-x:auto}
+.mgrid{min-width:900px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mweek{display:grid;grid-template-columns:78px repeat(7,minmax(0,1fr));border-top:1px solid var(--line)}
+.mweek.mhead{border-top:0;background:var(--head);color:var(--head-ink);font-weight:800;font-size:13px;text-align:center}
+.mweek.mhead > div{padding:6px 0}
+.mweek.mhead .su{color:var(--sun)} .mweek.mhead .sa{color:var(--sat)}
+.mwl{background:var(--soft);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:2px;padding:8px 4px;border-right:1px solid var(--line);text-align:center}
+.mwl b{font-size:14px} .mwl span{font-size:11px;color:var(--muted);white-space:nowrap}
+.mweek.now .mwl{background:rgba(57,255,20,.14)} .mweek.now .mwl b{color:#1A9E44}
+.mdh{border:0;background:transparent;text-align:left;padding:5px 8px 3px;display:flex;align-items:center;gap:5px;font-weight:800;font-size:14px;color:var(--ink);border-left:1px solid var(--line);min-width:0}
+.mdh:hover,.mtd:hover{background:var(--soft)}
+.mdh .hn{font-size:11px;font-weight:700;color:var(--sun);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdh .todaytag{margin-left:auto}
+.mdh.su,.mdh.ho{color:var(--sun)} .mdh.sa{color:var(--sat)} .mdh.ho .n{color:var(--sun)}
+.mdh.out .n{opacity:.5}
+.mdh.td{box-shadow:inset 0 3px 0 #39FF14}
+.mbar{border:0;border-radius:5px;margin:1px 4px;padding:3px 8px;font-size:12.5px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--mb-etc);color:var(--mb-etc-ink);min-width:0}
+.mbar.c0{border-top-left-radius:0;border-bottom-left-radius:0;margin-left:0}
+.mbar.c1{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:0}
+.mbar.open{background:var(--mb-open);color:var(--mb-open-ink)} .mbar.exam{background:var(--mb-exam);color:var(--mb-exam-ink)}
+.mbar.off{background:var(--mb-off);color:var(--mb-off-ink)} .mbar.end{background:var(--mb-end);color:var(--mb-end-ink)}
+.mbar:hover{filter:brightness(.96)}
+.mtd{border:0;background:transparent;text-align:left;vertical-align:top;padding:3px 8px 10px;min-height:84px;border-left:1px solid var(--line);color:var(--ink);font-size:12.5px;line-height:1.45;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;width:100%;min-width:0}
+.mtd.su,.mtd.sa{background:color-mix(in srgb,var(--soft) 45%,transparent)}
+.mtd.td{background:rgba(57,255,20,.06)}
+.mtd ul{margin:0;padding:0;list-style:none}
+.mtd li{position:relative;padding-left:9px;margin:1px 0;word-break:keep-all;overflow-wrap:anywhere}
+.mtd li::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--muted)}
+.mtd li.em{font-weight:800;color:var(--accent);padding-left:0}
+.mtd li.em::before{display:none}
+.monotes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-top:12px}
+.mnote{border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.6;background:var(--soft);white-space:normal}
+.mohint{font-size:12px;color:var(--muted);margin:10px 2px 0}
+.moempty{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:48px 20px;text-align:center}
+.moempty h3{margin:0 0 6px;font-size:18px} .moempty p{margin:0 0 16px;color:var(--muted);font-size:13.5px}
+.moempty .acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.modrop{outline:3px dashed var(--accent);outline-offset:-6px}
+.mbrow{display:flex;align-items:center;gap:8px;margin:4px 0}
+.mbrow .mbar{margin:0;flex:0 1 auto} .mbrow .sub{font-size:12px;color:var(--muted);margin-right:auto}
+.mnrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.mnrow textarea{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:7px 9px;font-size:13px;line-height:1.5}
+.mimp{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.mimp.bad{border-color:var(--warn)}
+.mimp .fn{font-weight:700;font-size:13px;word-break:break-all}
+.mimp .er{color:var(--warn);font-size:13px;margin-top:4px}
+.mimp .row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;font-size:13px}
+.mimp select{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:4px 6px}
+.mimp .st{color:var(--muted);margin-left:6px}
+.mimp .ow{color:var(--warn);font-weight:700} .mimp .nw{color:#1A9E44;font-weight:700}
+.mimp .tt{font-size:12px;color:var(--muted);margin-top:4px}
+@media print{
+  @page{size:A4 landscape;margin:7mm}
+  .mohead,.mohint{display:none!important}
+  .mosheet{border:0;padding:0} .mgrid{min-width:0;border-color:#999} .mwrap{overflow:visible}
+  .mtd{min-height:0;font-size:10px} .mbar{font-size:10px} .mweek{break-inside:avoid}
+  .mnote{font-size:10px}
+}
 /* 수업 회차 */
 .csec{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
 .csec h3{margin:0 0 2px;font-size:16px}
@@ -293,9 +359,10 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
 <body>
 
 <div class="top">
-  <button type="button" class="brand" id="homeBtn" title="달력으로 이동">학원 행사·홍보 일정표<small>설명회 · 체험수업 · 개강 모집 · 특강 · 이벤트</small></button>
+  <button type="button" class="brand" id="homeBtn" title="월간일정으로 이동">학원 행사·홍보 일정표<small>설명회 · 체험수업 · 개강 모집 · 특강 · 이벤트</small></button>
   <div class="tabs" role="group" aria-label="보기 전환">
-    <button data-view="cal" aria-pressed="true">달력</button>
+    <button data-view="month" aria-pressed="true">월간일정</button>
+    <button data-view="cal" aria-pressed="false">달력</button>
     <button data-view="list" aria-pressed="false">행사 목록</button>
     <button data-view="todo" aria-pressed="false">할 일</button>
     <button data-view="year" aria-pressed="false">연간</button>
@@ -311,6 +378,7 @@ dialog::backdrop{background:rgba(15,23,35,.45)}
 <dialog id="dlg"><form class="dlg" method="dialog" id="dlgForm" novalidate></form></dialog>
 <dialog id="tdlg" style="width:min(560px,96vw)"><form class="dlg" method="dialog" id="tForm" novalidate></form></dialog>
 <dialog id="sdlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="sForm" novalidate></form></dialog>
+<dialog id="mdlg" style="width:min(620px,96vw)"><form class="dlg" method="dialog" id="mForm" novalidate></form></dialog>
 <dialog id="ydlg" style="width:min(380px,96vw)"><form class="dlg" method="dialog" id="yForm" novalidate></form></dialog>
 <dialog id="udlg" style="width:min(460px,96vw)"><form class="dlg" method="dialog" id="uForm" novalidate></form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -478,7 +546,7 @@ function seed(){
 /* ---------- 상태 ---------- */
 const now=new Date();
 const state = {
-  events:[], types:DEFAULT_TYPES, view:"cal", y:now.getFullYear(), m:now.getMonth(),
+  events:[], types:DEFAULT_TYPES, view:"month", mo:{}, moKey:null, moPicked:false, y:now.getFullYear(), m:now.getMonth(),
   showTasks: lsGet("acad-showTasks",true),
   hidden: lsGet("acad-hiddenTypes",[]),
   q:"", ftype:"", period:"upcoming", who:lsGet("acad-who",""), cfg:null, sel:null, ym:{}, yy:new Date().getFullYear(),
@@ -508,7 +576,8 @@ function render(){
   const app=$("#app");
   curFocus=null;
   const fb=filterBarHTML();
-  if(state.view==="cal") app.innerHTML = fb+`<div class="layout"><div>${calHTML()}</div>${sideHTML()}</div>`;
+  if(state.view==="month") app.innerHTML = monthHTML();
+  else if(state.view==="cal") app.innerHTML = fb+`<div class="layout"><div>${calHTML()}</div>${sideHTML()}</div>`;
   else if(state.view==="list") app.innerHTML = fb+listHTML();
   else if(state.view==="year") app.innerHTML = yearHTML();
   else if(state.view==="cnt") app.innerHTML = cntHTML();
@@ -631,6 +700,444 @@ $("#yForm").addEventListener("click",e=>{
   if(b.id==="ySave"){ commitYMark("etc", $("#yMemo").value.trim()); }
 });
 $("#yForm").addEventListener("keydown",e=>{ if(e.key==="Enter" && e.target.id==="yMemo"){ e.preventDefault(); commitYMark("etc", e.target.value.trim()); } });
+
+/* 한글(HWP/HWPX) 월간 업무표 → 월간일정 데이터 변환기
+   필요: CFB, pako (HWP) / JSZip (HWPX) 전역 */
+const HwpMonth = (() => {
+  const EXT = new Set([1,2,3,4,5,6,7,8,9,11,12,14,15,16,17,18,19,20,21,22,23]);
+  function paraText(u8){
+    const n = u8.length >> 1, dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+    let out = "", i = 0;
+    while(i < n){
+      const c = dv.getUint16(i*2, true);
+      if(c < 32){ if(EXT.has(c)){ i += 8; continue; } if(c===10) out+="\n"; i++; continue; }
+      out += String.fromCharCode(c); i++;
+    }
+    return out;
+  }
+  function* records(u8){
+    const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength); let p = 0;
+    while(p + 4 <= u8.length){
+      const h = dv.getUint32(p, true); p += 4;
+      const tag = h & 0x3FF, lv = (h >>> 10) & 0x3FF; let sz = h >>> 20;
+      if(sz === 0xFFF){ sz = dv.getUint32(p, true); p += 4; }
+      yield {tag, lv, b: u8.subarray(p, p + sz)}; p += sz;
+    }
+  }
+  /* 공통 구조: items = [{t:"p", text}] | [{t:"tbl", rows, cols, cells:[{r,c,rs,cs,paras:[]}]}] (최상위만) */
+  function parseHwp(buf){
+    const cfb = CFB.read(new Uint8Array(buf), {type:"array"});
+    const find = name => { const i = cfb.FullPaths.findIndex(p => p.toLowerCase().endsWith("/" + name.toLowerCase())); return i < 0 ? null : cfb.FileIndex[i]; };
+    const fh = find("FileHeader");
+    if(!fh) throw new Error("한글(HWP) 파일이 아닙니다.");
+    const fhd = fh.content; const flags = fhd[36] | (fhd[37]<<8) | (fhd[38]<<16) | (fhd[39]<<24);
+    if(flags & 2) throw new Error("암호가 걸린 한글 파일은 읽을 수 없습니다.");
+    const compressed = flags & 1;
+    const items = [];
+    for(let s = 0; ; s++){
+      const e = find("BodyText/Section" + s); if(!e) break;
+      let d = e.content instanceof Uint8Array ? e.content : new Uint8Array(e.content);
+      if(compressed) d = pako.inflateRaw(d);
+      const stack = [];
+      const close = () => { const t = stack.pop(); if(!stack.length) items.push(t); };
+      for(const {tag, lv, b} of records(d)){
+        while(stack.length && lv <= stack[stack.length-1].lv) close();
+        const top = stack[stack.length-1];
+        if(tag === 71 && b[0]===0x20 && b[1]===0x6C && b[2]===0x62 && b[3]===0x74){ // ' lbt' = 'tbl '
+          stack.push({t:"tbl", lv, rows:0, cols:0, cells:[], cur:null});
+        } else if(tag === 77 && top){
+          const dv = new DataView(b.buffer, b.byteOffset, b.byteLength); top.rows = dv.getUint16(4, true); top.cols = dv.getUint16(6, true);
+        } else if(tag === 72 && top && lv === top.lv + 1){
+          const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+          const cell = {c: dv.getUint16(8,true), r: dv.getUint16(10,true), cs: dv.getUint16(12,true), rs: dv.getUint16(14,true), paras:[]};
+          top.cells.push(cell); top.cur = cell;
+        } else if(tag === 67){
+          const tx = paraText(b);
+          if(stack.length){ const t = stack[0]; if(t.cur) t.cur.paras.push(tx); } // 중첩 표의 글도 바깥 칸에 넣기
+          else items.push({t:"p", text: tx});
+        }
+      }
+      while(stack.length) close();
+    }
+    return items;
+  }
+  async function parseHwpx(buf){
+    const zip = await JSZip.loadAsync(buf);
+    const names = Object.keys(zip.files).filter(n => /^Contents\/section\d+\.xml$/i.test(n)).sort();
+    if(!names.length) throw new Error("한글(HWPX) 파일이 아닙니다.");
+    const items = [];
+    const localName = n => n.localName || n.nodeName.replace(/^.*:/, "");
+    const textOf = p => { let s = ""; p.querySelectorAll("*").forEach(x => { if(localName(x)==="t") s += x.textContent; else if(localName(x)==="lineBreak") s += "\n"; }); return s; };
+    for(const n of names){
+      const xml = new DOMParser().parseFromString(await zip.file(n).async("string"), "application/xml");
+      const walk = (node, cell) => {
+        for(const ch of node.children){
+          const ln = localName(ch);
+          if(ln === "tbl"){
+            if(cell){ ch.querySelectorAll("*").forEach(x=>{ if(localName(x)==="p" && ![...x.children].some(y=>localName(y)==="run" && [...y.children].some(z=>localName(z)==="tbl"))) cell.paras.push(textOf(x)); }); continue; }
+            const t = {t:"tbl", rows:+ch.getAttribute("rowCnt")||0, cols:+ch.getAttribute("colCnt")||0, cells:[]};
+            for(const tr of ch.children) if(localName(tr)==="tr") for(const tc of tr.children) if(localName(tc)==="tc"){
+              const a = [...tc.children].find(x=>localName(x)==="cellAddr"), sp = [...tc.children].find(x=>localName(x)==="cellSpan");
+              const c = {c:+a.getAttribute("colAddr"), r:+a.getAttribute("rowAddr"), cs:+(sp?.getAttribute("colSpan")||1), rs:+(sp?.getAttribute("rowSpan")||1), paras:[]};
+              const sub = [...tc.children].find(x=>localName(x)==="subList");
+              if(sub) walk(sub, c);
+              t.cells.push(c);
+            }
+            items.push(t);
+          } else if(ln === "p"){
+            const hasTbl = [...ch.querySelectorAll("*")].some(x=>localName(x)==="tbl");
+            if(hasTbl) walk(ch, cell);
+            else if(cell) cell.paras.push(textOf(ch)); else items.push({t:"p", text:textOf(ch)});
+          } else walk(ch, cell);
+        }
+      };
+      walk(xml.documentElement, null);
+    }
+    return items;
+  }
+
+  const pad = n => String(n).padStart(2, "0");
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const WD = ["일","월","화","수","목","금","토"];
+  const squeeze = s => s.replace(/(^|[^가-힣])((?:[가-힣] +)+[가-힣])(?![가-힣])/g, (m, p, x) => {
+      const gaps = x.match(/ +/g).map(g => g.length), mx = Math.max(...gaps), mn = Math.min(...gaps);
+      return p + x.replace(/ +/g, g => (mx > mn && g.length === mx) ? " " : "");
+    }).replace(/\s{2,}/g, " ").trim();
+  const tidy = s => squeeze(s).replace(/\(\s+/g, "(").replace(/\s+\)/g, ")");
+  function cleanLines(paras){
+    const out = [];
+    for(const raw of paras.join("\n").split("\n")){
+      const t = raw.replace(/ /g, " ").trim();
+      if(!t) continue;
+      const v = t.replace(/^[-–·]\s*/, "").trim();
+      if(!v) continue;
+      const prev = out[out.length-1] || "", open = (prev.match(/\(/g)||[]).length > (prev.match(/\)/g)||[]).length;
+      if(out.length && (/^\(/.test(v) || /및$/.test(prev) || open)) out[out.length-1] += (open && /^[\/,]/.test(v) ? "" : " ") + v;
+      else out.push(v);
+    }
+    return out;
+  }
+
+  /* 표 → 월간일정 */
+  function toMonth(items, fileName, now = new Date(), override = null){
+    const tables = items.filter(x => x.t === "tbl");
+    const main = tables.find(t => { const h = t.cells.filter(c => c.r === 0).map(c => c.paras.join("").trim()); return h.includes("월") && h.includes("토"); });
+    if(!main) throw new Error("요일(일~토) 줄이 있는 업무표를 찾지 못했습니다.");
+    /* 제목 */
+    const titleParts = items.filter(x => x.t === "p").map(x => x.text.trim()).filter(Boolean);
+    const title = titleParts.join(" ").replace(/\s+/g, " ").trim();
+    /* 연·월 */
+    let month = +(title.match(/(\d{1,2})\s*월/)||[])[1] || 0, year = 0;
+    const fm = (fileName||"").match(/(\d{2,4})[^\d]{1,4}(\d{1,2})[^\d]*\.(hwpx?)$/i);
+    if(fm){ year = +fm[1]; if(year < 100) year += 2000; if(!month) month = +fm[2]; }
+    if(override){ year = override.year; month = override.month; }
+    if(!month) throw new Error("제목에서 몇 월인지 찾지 못했습니다.");
+    if(!year){ year = now.getFullYear(); const diffM = (year*12+month) - (now.getFullYear()*12+now.getMonth()+1); if(diffM > 6) year--; else if(diffM < -6) year++; }
+    /* 요일 열 범위 */
+    const head = main.cells.filter(c => c.r === 0);
+    const ranges = [];
+    for(const c of head){ const k = WD.indexOf(c.paras.join("").trim()); if(k >= 0) ranges[k] = [c.c, c.c + c.cs - 1]; }
+    if(ranges.filter(Boolean).length < 7) throw new Error("요일 칸(일~토)을 모두 찾지 못했습니다.");
+    const dayAt = col => { for(let k = 0; k < 7; k++) if(col >= ranges[k][0] && col <= ranges[k][1]) return k; return col < ranges[0][0] ? 0 : 6; };
+    const fullDays = (c0, c1) => { const r = []; for(let k = 0; k < 7; k++) if(ranges[k][0] >= c0 && ranges[k][1] <= c1) r.push(k); return r; };
+    /* 주차 줄 */
+    const byRow = {}; main.cells.forEach(c => (byRow[c.r] ||= []).push(c));
+    Object.values(byRow).forEach(a => a.sort((x, y) => x.c - y.c));
+    const rowsIdx = Object.keys(byRow).map(Number).sort((a, b) => a - b);
+    const weekRows = rowsIdx.filter(r => /^\s*\d+\s*주\s*차/.test((byRow[r].find(c => c.c === 0)?.paras.join("") || "")));
+    if(!weekRows.length) throw new Error("‘1주차’ 같은 주차 줄을 찾지 못했습니다.");
+    /* 시작 날짜: 1주차 줄의 첫 숫자 */
+    let start = null;
+    for(const c of byRow[weekRows[0]]){
+      if(c.c === 0) continue; const s = c.paras.join("").trim(); const m = s.match(/^(?:(\d{1,2})\s*\/\s*)?(\d{1,2})$/); if(!m) continue;
+      const k = dayAt(c.c); let mo = m[1] ? +m[1] : (+m[2] > 20 ? month - 1 : month), y = year;
+      if(m[1] && +m[1] === 12 && month === 1) y = year - 1;
+      if(mo < 1){ mo = 12; y = year - 1; }
+      const d = new Date(y, mo - 1, +m[2]); d.setDate(d.getDate() - k); start = d; break;
+    }
+    if(!start){ const d = new Date(year, month - 1, 1); d.setDate(1 - d.getDay()); start = d; }
+    const dateOf = (w, k) => { const d = new Date(start); d.setDate(d.getDate() + w * 7 + k); return ymd(d); };
+    const days = {}, bars = [], notes = [];
+    const lastWeekRow = weekRows[weekRows.length - 1];
+    let lastContentRow = rowsIdx[rowsIdx.length - 1];
+    /* 맨 아래 공지 줄: 주차가 아니고, 날짜 숫자도 아닌 마지막 줄 */
+    const noteRow = rowsIdx.filter(r => r > lastWeekRow).pop();
+    const noteCells = noteRow != null ? byRow[noteRow].filter(c => c.c !== 0 && c.paras.join("").trim()) : [];
+    const isNoteRow = noteCells.length && noteCells.some(c => c.paras.join("").length > 40) && (byRow[noteRow].length <= 5);
+    if(isNoteRow){ noteCells.forEach(c => notes.push(c.paras.map(p => p.replace(/\s+$/,"")).filter(p => p.trim()).map(p => p.replace(/^\s+/, "")).join("\n"))); lastContentRow = noteRow - 1; }
+    weekRows.forEach((wr, w) => {
+      const end = (weekRows[w + 1] ?? (lastContentRow + 1)) - 1;
+      for(let r = wr + 1; r <= end; r++){
+        const used = new Set();
+        for(const c of (byRow[r] || [])){
+          if(c.c === 0) continue;
+          const lines = cleanLines(c.paras);
+          if(!lines.length) continue;
+          const c1 = c.c + c.cs - 1, full = fullDays(c.c, c1);
+          const spaced = lines.length === 1 && /(?:^|\s)[가-힣] +[가-힣] +[가-힣](?:\s|$)/.test(lines[0]);
+          if(lines.length === 1 && (full.length >= 2 || spaced)){
+            const ks = full.length ? full : [dayAt(c.c)];
+            bars.push({from: dateOf(w, ks[0]), to: dateOf(w, ks[ks.length - 1]), text: tidy(lines[0])});
+            continue;
+          }
+          let k = dayAt(c.c); while(used.has(k) && k < 6) k++;
+          used.add(k);
+          const key = dateOf(w, k); (days[key] ||= []).push(...lines.map(tidy));
+        }
+      }
+    });
+    return {year, month, title, start: ymd(start), weeks: weekRows.length, days, bars, notes};
+  }
+  async function read(file){
+    const buf = await file.arrayBuffer();
+    const u = new Uint8Array(buf, 0, 4);
+    const isZip = u[0] === 0x50 && u[1] === 0x4B;
+    const items = isZip ? await parseHwpx(buf) : parseHwp(buf);
+    return toMonth(items, file.name);
+  }
+  return {read, parseHwp, parseHwpx, toMonth};
+})();
+
+/* ---------- 월간일정 ---------- */
+const LIBS = {
+  cfb:  "https://cdn.jsdelivr.net/npm/cfb@1.2.2/dist/cfb.min.js",
+  pako: "https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js",
+  jszip:"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
+};
+const loadedLibs = {};
+function loadLib(k){
+  return loadedLibs[k] ||= new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = LIBS[k]; s.onload = res;
+    s.onerror = () => { delete loadedLibs[k]; rej(new Error("한글 파일 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.")); };
+    document.head.appendChild(s);
+  });
+}
+const moId = key => `_mo_${key}`;
+const moDoc = key => state.mo[moId(key)];
+const moKeyOf = (y, m) => `${y}-${pad(m)}`;          // m: 1~12
+const moLabel = key => { const [y, m] = key.split("-").map(Number); return `${y}년 ${m}월`; };
+function moShift(key, n){ const [y, m] = key.split("-").map(Number); const d = new Date(y, m - 1 + n, 1); return moKeyOf(d.getFullYear(), d.getMonth() + 1); }
+function moRange(key, doc){
+  const [y, m] = key.split("-").map(Number);
+  const f = new Date(y, m - 1, 1), l = new Date(y, m, 0);
+  const calStart = ymd(new Date(y, m - 1, 1 - f.getDay())), calEnd = ymd(new Date(y, m - 1, l.getDate() + (6 - l.getDay())));
+  let s = doc?.start || calStart, e = calEnd;
+  if(doc?.start && doc.weeks){ const fe = addDays(doc.start, doc.weeks * 7 - 1); if(fe > e) e = fe; }
+  const ds = Object.keys(doc?.days || {}).sort();
+  if(ds.length){ if(ds[0] < s) s = ds[0]; if(ds[ds.length-1] > e) e = ds[ds.length-1]; }
+  s = addDays(s, -parse(s).getDay()); e = addDays(e, 6 - parse(e).getDay());
+  return [s, e];
+}
+function pickRecentMonth(){
+  const T = todayStr(), cur = T.slice(0, 7);
+  const keys = Object.keys(state.mo).map(k => k.slice(4)).sort();
+  if(!keys.length) return cur;
+  if(keys.includes(cur)) return cur;
+  const covering = keys.filter(k => { const [s, e] = moRange(k, moDoc(k)); return s <= T && T <= e; });
+  if(covering.length) return covering[covering.length - 1];
+  const past = keys.filter(k => k < cur); if(past.length) return past[past.length - 1];
+  return keys[0];
+}
+const barKind = t => /개강|개학|입학/.test(t) ? "open" : /종강|방학식/.test(t) ? "end" : /연휴|휴무|휴원|방학/.test(t) ? "off" : /고사|평가|시험|테스트|TEST/i.test(t) ? "exam" : "etc";
+
+function monthHTML(){
+  const key = state.moKey || todayStr().slice(0, 7), doc = moDoc(key), T = todayStr();
+  const keys = [...new Set([...Object.keys(state.mo).map(k => k.slice(4)), key])].sort();
+  const bar = `<div class="mohead">
+      <button type="button" class="btn" data-monav="-1" aria-label="이전 달">‹</button>
+      <select class="ym" id="moSel" aria-label="월 선택">${keys.map(k => `<option value="${k}" ${k===key?"selected":""}>${moLabel(k)}${moDoc(k)?"":" (비어 있음)"}</option>`).join("")}</select>
+      <button type="button" class="btn" data-monav="1" aria-label="다음 달">›</button>
+      ${key!==T.slice(0,7)?`<button type="button" class="btn small" id="moToday">이번 달</button>`:""}
+      <span class="moacts">
+        <button type="button" class="btn primary" id="moUpload">한글 파일 올리기</button>
+        ${doc?`<button type="button" class="btn" id="moMeta">제목·공지 수정</button><button type="button" class="btn" id="printBtn">인쇄</button>`:""}
+      </span>
+      <input type="file" id="moFile" accept=".hwp,.hwpx" multiple hidden>
+    </div>`;
+  if(!doc) return bar + `<div class="moempty">
+      <h3>${moLabel(key)} 월간일정이 아직 없습니다.</h3>
+      <p>한글로 만든 월간 업무표를 올리면 날짜별로 자동으로 들어갑니다. 파일을 이 화면에 끌어다 놓아도 됩니다.</p>
+      <div class="acts"><button type="button" class="btn primary" id="moUpload2">한글 파일 올리기</button><button type="button" class="btn" id="moNew">직접 만들기</button></div>
+    </div>`;
+  const [s, e] = moRange(key, doc);
+  const [, mm] = key.split("-").map(Number);
+  const bars = (doc.bars || []).map((b, i) => ({...b, i})).filter(b => b.from && b.to);
+  let weeks = "", w = 0;
+  for(let ws = s; ws <= e; ws = addDays(ws, 7), w++){
+    const we = addDays(ws, 6);
+    const segs = bars.filter(b => b.from <= we && b.to >= ws).sort((a, b) => a.from.localeCompare(b.from) || b.to.localeCompare(a.to))
+      .map(b => ({b, k0: diff(ws, b.from < ws ? ws : b.from), k1: diff(ws, b.to > we ? we : b.to), cut0: b.from < ws, cut1: b.to > we}));
+    const lanes = []; segs.forEach(sg => { let L = 0; while((lanes[L] || []).some(x => !(sg.k1 < x.k0 || sg.k0 > x.k1))) L++; (lanes[L] ||= []).push(sg); sg.L = L; });
+    const nL = lanes.length, thisWeek = ws <= T && T <= we;
+    let h = `<div class="mweek${thisWeek?" now":""}" style="grid-template-rows:auto ${"auto ".repeat(nL)}1fr">
+      <div class="mwl" style="grid-row:1 / span ${nL + 2}"><b>${w + 1}주차</b><span>${md(ws)} ~ ${md(we)}</span></div>`;
+    for(let k = 0; k < 7; k++){
+      const d = addDays(ws, k), hol = HOLIDAYS[d], x = parse(d);
+      const cls = ["mdh"]; if(k===0) cls.push("su"); if(k===6) cls.push("sa"); if(hol) cls.push("ho"); if(x.getMonth()+1 !== mm) cls.push("out"); if(d===T) cls.push("td");
+      h += `<button type="button" class="${cls.join(" ")}" data-moday="${d}" style="grid-column:${k+2}"><span class="n">${x.getDate()===1||(w===0&&k===0)?`${x.getMonth()+1}/${x.getDate()}`:x.getDate()}</span>${hol?`<span class="hn">${esc(hol)}</span>`:""}${d===T?`<span class="todaytag">오늘</span>`:""}</button>`;
+    }
+    segs.forEach(sg => {
+      h += `<button type="button" class="mbar ${barKind(sg.b.text)}${sg.cut0?" c0":""}${sg.cut1?" c1":""}" data-mobar="${sg.b.i}" style="grid-row:${sg.L + 2};grid-column:${sg.k0 + 2} / ${sg.k1 + 3}" title="${esc(`${sg.b.text} (${md(sg.b.from)}~${md(sg.b.to)})`)}">${esc(sg.b.text)}</button>`;
+    });
+    for(let k = 0; k < 7; k++){
+      const d = addDays(ws, k), lines = doc.days?.[d] || [];
+      h += `<button type="button" class="mtd${k===0?" su":""}${k===6?" sa":""}${d===T?" td":""}" data-moday="${d}" style="grid-row:${nL + 2};grid-column:${k + 2}" aria-label="${md(d)} 업무 ${lines.length}개">${lines.length?`<ul>${lines.map(l => `<li${/^\[.*\]$/.test(l)?' class="em"':""}>${esc(l)}</li>`).join("")}</ul>`:""}</button>`;
+    }
+    weeks += h + `</div>`;
+  }
+  const notes = (doc.notes || []).filter(n => n && n.trim());
+  return bar + `<section class="mosheet">
+    <div class="motitle"><h2>${esc(doc.title || `${mm}월 업무`)}</h2>
+      <span class="sub">${doc.source?`원본: ${esc(doc.source)} · `:""}${doc.updatedBy?`수정: ${esc(doc.updatedBy)} ${new Date(doc.updatedAt).toLocaleDateString("ko-KR")}`:""}</span></div>
+    <div class="mwrap"><div class="mgrid">
+      <div class="mweek mhead"><div></div>${[..."일월화수목금토"].map((x, k) => `<div class="${k===0?"su":k===6?"sa":""}">${x}</div>`).join("")}</div>
+      ${weeks}
+    </div></div>
+    ${notes.length?`<div class="monotes">${notes.map(n => `<div class="mnote">${esc(n).replace(/\n/g, "<br>")}</div>`).join("")}</div>`:""}
+    <p class="mohint">날짜 칸을 누르면 업무를, 색 막대를 누르면 여러 날 일정을 고칠 수 있어요.</p>
+  </section>`;
+}
+
+/* 저장 */
+async function saveMo(key, fn){
+  const id = moId(key), doc = clone(moDoc(key) || {id, title:"", days:{}, bars:[], notes:[]});
+  doc.days ||= {}; doc.bars ||= []; doc.notes ||= [];
+  fn(doc); doc.id = id; doc.updatedBy = state.user || "이름없음"; doc.updatedAt = Date.now();
+  try{ await store.save(doc); return true; }catch(err){ toast("저장하지 못했습니다: " + err.message); return false; }
+}
+
+/* 편집 창 */
+let mdraft = null;
+function openMo(kind, arg){
+  const key = state.moKey, doc = moDoc(key) || {};
+  if(kind === "day") mdraft = {kind, key, date: arg, text: (doc.days?.[arg] || []).join("\n")};
+  else if(kind === "bar"){ const b = arg == null ? null : doc.bars?.[arg]; mdraft = {kind, key, i: arg, text: b?.text || "", from: b?.from || mdraft?.date || todayStr(), to: b?.to || mdraft?.date || todayStr()}; }
+  else if(kind === "meta") mdraft = {kind, key, title: doc.title || "", notes: [...(doc.notes || [])]};
+  drawMo(); if(!$("#mdlg").open) $("#mdlg").showModal();
+}
+function drawMo(){
+  const m = mdraft, doc = moDoc(m.key) || {};
+  let head = "", body = "", foot = "";
+  if(m.kind === "day"){
+    const overl = (doc.bars || []).map((b, i) => ({...b, i})).filter(b => b.from <= m.date && b.to >= m.date);
+    head = `${parse(m.date).getMonth()+1}월 ${parse(m.date).getDate()}일 (${dow(m.date)})${HOLIDAYS[m.date]?` <span style="color:var(--sun);font-size:14px">${HOLIDAYS[m.date]}</span>`:""}`;
+    body = `<label class="f"><span>업무 (한 줄에 하나씩)</span><textarea id="mdText" rows="9" placeholder="예: 회의 진행&#10;진도계획 업로드">${esc(m.text)}</textarea></label>
+      <div class="grp" style="margin-top:14px">여러 날 일정</div>
+      ${overl.map(b => `<div class="mbrow"><span class="mbar ${barKind(b.text)}" style="cursor:default">${esc(b.text)}</span><span class="sub">${md(b.from)}~${md(b.to)}</span><button type="button" class="btn small" data-mdbar="${b.i}">수정</button></div>`).join("") || `<p class="hint" style="margin:4px 0">없음</p>`}
+      <button type="button" class="btn small" id="mdAddBar" style="margin-top:6px">+ 여러 날 일정 추가</button>`;
+    foot = `<button type="button" class="btn" data-mdclose>취소</button><button type="button" class="btn primary" id="mdSave">저장</button>`;
+  } else if(m.kind === "bar"){
+    head = m.i == null ? "여러 날 일정 추가" : "여러 날 일정 수정";
+    body = `<label class="f"><span>내용</span><input id="mdBarText" value="${esc(m.text)}" placeholder="예: 분기고사 (GS/G) / 교재점검"></label>
+      <div class="fgrid" style="grid-template-columns:1fr 1fr;margin-top:10px">
+        <label class="f"><span>시작일</span><input type="date" id="mdFrom" value="${m.from}"></label>
+        <label class="f"><span>종료일</span><input type="date" id="mdTo" value="${m.to}"></label></div>
+      <p class="hint" style="margin-top:8px">‘개강’, ‘고사·평가’, ‘연휴·휴무’, ‘종강’이 들어가면 색이 자동으로 정해져요.</p>`;
+    foot = `${m.i != null?`<button type="button" class="btn danger" id="mdDelBar">삭제</button>`:""}<button type="button" class="btn" data-mdclose>취소</button><button type="button" class="btn primary" id="mdSaveBar">저장</button>`;
+  } else if(m.kind === "meta"){
+    head = `${moLabel(m.key)} 제목·공지`;
+    body = `<label class="f"><span>제목</span><input id="mdTitle" value="${esc(m.title)}" placeholder="예: 11월 GS / G / FIT / BM / 내신 분기 업무"></label>
+      <div class="grp" style="margin-top:14px">공지 (표 아래 칸)</div>
+      ${m.notes.map((n, i) => `<div class="mnrow"><textarea data-mdnote="${i}" rows="5">${esc(n)}</textarea><button type="button" class="btn small danger" data-mdnotedel="${i}">삭제</button></div>`).join("")}
+      <button type="button" class="btn small" id="mdNoteAdd">+ 공지 칸 추가</button>`;
+    foot = `${moDoc(m.key)?`<button type="button" class="btn danger" id="mdDelMonth" style="margin-right:auto">이 달 월간일정 삭제</button>`:""}<button type="button" class="btn" data-mdclose>취소</button><button type="button" class="btn primary" id="mdSaveMeta">저장</button>`;
+  } else if(m.kind === "import"){
+    head = "한글 파일 올리기";
+    body = `<p class="hint" style="margin:0 0 10px">파일에서 읽은 내용입니다. 몇 월인지 확인하고 저장하세요.</p>
+      ${m.list.map((x, i) => `<div class="mimp${x.err?" bad":""}">
+        <div class="fn">${esc(x.name)}</div>
+        ${x.err?`<div class="er">${esc(x.err)}</div>`:`<div class="row">
+          <select data-mimy="${i}" aria-label="연도">${[x.data.year-1, x.data.year, x.data.year+1].map(y=>`<option ${y===x.data.year?"selected":""}>${y}</option>`).join("")}</select>년
+          <select data-mimm="${i}" aria-label="월">${Array.from({length:12},(_,k)=>`<option value="${k+1}" ${k+1===x.data.month?"selected":""}>${k+1}</option>`).join("")}</select>월
+          <span class="st">업무 ${Object.values(x.data.days).flat().length}개 · 여러 날 일정 ${x.data.bars.length}개 · 공지 ${x.data.notes.length}칸</span>
+          ${moDoc(moKeyOf(x.data.year, x.data.month))?`<span class="ow">이미 있는 ${x.data.month}월 내용을 바꿉니다</span>`:`<span class="nw">새로 추가</span>`}
+        </div><div class="tt">${esc(x.data.title)}</div>`}
+      </div>`).join("")}`;
+    const ok = m.list.filter(x => !x.err).length;
+    foot = `<button type="button" class="btn" data-mdclose>취소</button>${ok?`<button type="button" class="btn primary" id="mdImport">${ok}개 저장</button>`:""}`;
+  }
+  $("#mForm").innerHTML = `<header><h2>${head}</h2><button type="button" class="btn" data-mdclose>닫기</button></header>
+    <div class="scroll">${body}</div><footer><span class="info"></span>${foot}</footer>`;
+}
+async function importFiles(files){
+  files = [...files].filter(f => /\.hwpx?$/i.test(f.name));
+  if(!files.length){ toast("한글 파일(.hwp, .hwpx)만 올릴 수 있습니다."); return; }
+  toast("한글 파일을 읽는 중입니다…");
+  const list = [];
+  for(const f of files){
+    try{
+      const buf = await f.arrayBuffer(), u = new Uint8Array(buf, 0, 4), zip = u[0] === 0x50 && u[1] === 0x4B;
+      if(zip) await loadLib("jszip"); else { await loadLib("cfb"); await loadLib("pako"); }
+      const items = zip ? await HwpMonth.parseHwpx(buf) : HwpMonth.parseHwp(buf);
+      list.push({name: f.name, items, data: HwpMonth.toMonth(items, f.name)});
+    }catch(err){ list.push({name: f.name, err: err.message || String(err)}); }
+  }
+  mdraft = {kind: "import", list}; drawMo(); if(!$("#mdlg").open) $("#mdlg").showModal();
+}
+const mForm = $("#mForm");
+mForm.addEventListener("input", e => {
+  const el = e.target, m = mdraft; if(!m) return;
+  if(el.id === "mdText") m.text = el.value;
+  else if(el.id === "mdBarText") m.text = el.value;
+  else if(el.id === "mdFrom"){ m.from = el.value; if(m.to < m.from){ m.to = m.from; $("#mdTo").value = m.to; } }
+  else if(el.id === "mdTo") m.to = el.value;
+  else if(el.id === "mdTitle") m.title = el.value;
+  else if(el.dataset.mdnote != null) m.notes[+el.dataset.mdnote] = el.value;
+});
+mForm.addEventListener("change", e => {
+  const el = e.target, m = mdraft;
+  if(m?.kind === "import" && (el.dataset.mimy != null || el.dataset.mimm != null)){
+    const i = +(el.dataset.mimy ?? el.dataset.mimm), x = m.list[i];
+    const y = +mForm.querySelector(`[data-mimy="${i}"]`).value, mo = +mForm.querySelector(`[data-mimm="${i}"]`).value;
+    try{ x.data = HwpMonth.toMonth(x.items, x.name, new Date(), {year: y, month: mo}); }catch(err){ x.err = err.message; }
+    drawMo();
+  }
+});
+mForm.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if(!b) return; const m = mdraft;
+  if(b.hasAttribute("data-mdclose")){ $("#mdlg").close(); return; }
+  if(b.id === "mdSave"){
+    const lines = m.text.split("\n").map(x => x.trim()).filter(Boolean);
+    if(await saveMo(m.key, d => { if(lines.length) d.days[m.date] = lines; else delete d.days[m.date]; })){ $("#mdlg").close(); toast("저장했습니다."); }
+    return;
+  }
+  if(b.id === "mdAddBar"){ const date = m.date; mdraft = {kind: "bar", key: m.key, i: null, text: "", from: date, to: date}; drawMo(); setTimeout(() => $("#mdBarText")?.focus(), 0); return; }
+  if(b.dataset.mdbar != null){ openMo("bar", +b.dataset.mdbar); return; }
+  if(b.id === "mdSaveBar"){
+    const t = m.text.trim(); if(!t){ toast("내용을 입력해 주세요."); return; }
+    if(!m.from || !m.to || m.to < m.from){ toast("날짜를 확인해 주세요."); return; }
+    if(await saveMo(m.key, d => { const v = {id: d.bars[m.i]?.id || uid(), text: t, from: m.from, to: m.to}; if(m.i == null) d.bars.push(v); else d.bars[m.i] = v; })){ $("#mdlg").close(); toast("저장했습니다."); }
+    return;
+  }
+  if(b.id === "mdDelBar"){ if(!confirm(`‘${m.text}’ 일정을 삭제할까요?`)) return;
+    if(await saveMo(m.key, d => { d.bars.splice(m.i, 1); })){ $("#mdlg").close(); toast("삭제했습니다."); } return; }
+  if(b.id === "mdNoteAdd"){ m.notes.push(""); drawMo(); return; }
+  if(b.dataset.mdnotedel != null){ m.notes.splice(+b.dataset.mdnotedel, 1); drawMo(); return; }
+  if(b.id === "mdSaveMeta"){
+    if(await saveMo(m.key, d => { d.title = m.title.trim(); d.notes = m.notes.map(n => n.replace(/\s+$/, "")).filter(n => n.trim()); })){ $("#mdlg").close(); toast("저장했습니다."); }
+    return;
+  }
+  if(b.id === "mdDelMonth"){
+    if(!confirm(`${moLabel(m.key)} 월간일정을 모두 삭제할까요? 되돌릴 수 없습니다.`)) return;
+    try{ await store.remove(moId(m.key)); $("#mdlg").close(); toast("삭제했습니다."); }catch(err){ toast("삭제하지 못했습니다: " + err.message); }
+    return;
+  }
+  if(b.id === "mdImport"){
+    const ok = m.list.filter(x => !x.err); b.disabled = true;
+    let last = null, n = 0;
+    for(const x of ok){
+      const key = moKeyOf(x.data.year, x.data.month);
+      const data = x.data;
+      const saved = await saveMo(key, d => {
+        d.title = data.title; d.start = data.start; d.weeks = data.weeks; d.days = data.days;
+        d.bars = data.bars.map(v => ({id: uid(), ...v})); d.notes = data.notes; d.source = x.name; d.importedAt = Date.now();
+      });
+      if(saved){ n++; last = key; }
+    }
+    $("#mdlg").close();
+    if(last){ state.moKey = n > 1 ? pickRecentMonth() : last; state.view = "month"; render(); toast(`${n}개 월간일정을 저장했습니다.`); }
+  }
+});
 
 /* ---------- 수업 회차 ---------- */
 function markIndex(){
@@ -977,6 +1484,14 @@ document.addEventListener("click", async e=>{
   if(b.id==="editStaff"){ openStaffEditor(); return; }
   if(b.dataset.sel){ state.sel = state.sel===b.dataset.sel ? null : b.dataset.sel; render(); return; }
   if(b.id==="clearSel"){ state.sel=null; render(); return; }
+  if(b.dataset.monav){ state.moKey=moShift(state.moKey||todayStr().slice(0,7), +b.dataset.monav); render(); return; }
+  if(b.id==="moToday"){ state.moKey=todayStr().slice(0,7); render(); return; }
+  if(b.id==="moUpload"||b.id==="moUpload2"){ $("#moFile").click(); return; }
+  if(b.id==="moMeta"){ openMo("meta"); return; }
+  if(b.id==="moNew"){ const key=state.moKey, [, mm]=key.split("-").map(Number), [s0, e0]=moRange(key, null);
+    if(await saveMo(key, d=>{ d.title=`${mm}월 업무`; d.start=s0; d.weeks=(diff(s0,e0)+1)/7; })) toast(`${mm}월 월간일정을 만들었습니다. 날짜 칸을 눌러 업무를 넣어 보세요.`); return; }
+  if(b.dataset.moday){ openMo("day", b.dataset.moday); return; }
+  if(b.dataset.mobar!=null && !b.closest("dialog")){ openMo("bar", +b.dataset.mobar); return; }
   if(b.dataset.ymark){ openYMark(b.dataset.ymark); return; }
   if(b.dataset.gomonth){ const d=parse(b.dataset.gomonth); state.y=d.getFullYear(); state.m=d.getMonth(); state.view="cal"; render(); window.scrollTo({top:0}); return; }
   if(b.id==="printBtn"){ window.print(); return; }
@@ -1013,13 +1528,19 @@ function focusFrom(target){
 document.addEventListener("mouseover",e=>focusFrom(e.target));
 document.addEventListener("focusin",e=>focusFrom(e.target));
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && state.sel && !document.querySelector("dialog[open]")){ state.sel=null; render(); } });
-$("#homeBtn").onclick=()=>{ state.sel=null; state.view="cal"; state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
+$("#homeBtn").onclick=()=>{ state.sel=null; state.view="month"; state.moKey=pickRecentMonth(); state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
+/* 월간일정: 파일 끌어다 놓기 */
+document.addEventListener("dragover",e=>{ if(state.view!=="month"||document.querySelector("dialog[open]")) return; if([...(e.dataTransfer?.types||[])].includes("Files")){ e.preventDefault(); $("#app").classList.add("modrop"); } });
+document.addEventListener("dragleave",e=>{ if(!e.relatedTarget) $("#app").classList.remove("modrop"); });
+document.addEventListener("drop",e=>{ $("#app").classList.remove("modrop"); if(state.view!=="month"||!e.dataTransfer?.files?.length) return; e.preventDefault(); importFiles(e.dataTransfer.files); });
 
 document.addEventListener("change", e=>{
   const el=e.target;
   if(el.dataset.legend){ const k=el.dataset.legend; state.hidden = el.checked ? state.hidden.filter(x=>x!==k) : [...state.hidden,k]; lsSet("acad-hiddenTypes",state.hidden); render(); }
   else if(el.id==="showTasks"){ state.showTasks=el.checked; lsSet("acad-showTasks",el.checked); render(); }
   else if(el.id==="whoSel"){ state.who=el.value; lsSet("acad-who",state.who); render(); }
+  else if(el.id==="moSel"){ state.moKey=el.value; render(); }
+  else if(el.id==="moFile"){ const fs=[...el.files]; el.value=""; if(fs.length) importFiles(fs); }
   else if(el.id==="yySel"){ state.yy=+el.value; render(); }
   else if(el.dataset.ynote){ const [y,m]=el.dataset.ynote.split("-").map(Number); const v=el.value;
     saveYm(y,m-1,doc=>{ doc.note=v; }).then(ok=>{ if(ok) toast(`${m}월 메모를 저장했습니다.`); }); }
@@ -1200,6 +1721,8 @@ sForm.addEventListener("click",async e=>{
     }
     state.cfg = cfg || null;
     state.ym = Object.fromEntries(docs.filter(d=>d.id.startsWith("_ym_")).map(d=>[d.id,d]));
+    state.mo = Object.fromEntries(docs.filter(d=>d.id.startsWith("_mo_")).map(d=>[d.id,d]));
+    if(!state.moPicked){ state.moPicked=true; state.moKey=pickRecentMonth(); }
     state.events = docs.filter(d=>!d.id.startsWith("_"));
     if(state.sel && !state.events.some(e=>e.id===state.sel)) state.sel=null;
     const ae=document.activeElement;
@@ -1211,6 +1734,7 @@ sForm.addEventListener("click",async e=>{
     st.className="status err"; st.textContent="권한 오류";
     $("#banner").innerHTML=`<div class="banner err">일정을 불러오지 못했습니다. Firestore 보안 규칙을 확인해 주세요. (${esc(err.code||err.message)})</div>`;
   });
+  if(!state.moKey) state.moKey=todayStr().slice(0,7);
   render();
 })();
 </script>
