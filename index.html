@@ -174,10 +174,32 @@ main{padding:18px 20px 40px;max-width:1600px;margin:0 auto}
 .mm .notes{padding:6px 10px 9px;font-size:11.5px;line-height:1.6;border-top:1px solid var(--line);min-height:30px}
 .mm .notes .h{color:var(--sun);font-weight:600}
 .mm .notes .e i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:0}
+.ypage2{margin-top:14px}
+.ptitle,.ynote-p,.pyr{display:none}
+/* 연간일정 인쇄: 같은 높이, 8개월씩 한 쪽 */
+body.print-year .yhead,body.print-year .ynote{display:none!important}
+body.print-year .ptitle{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 10px;font-size:15px}
+body.print-year .ptitle b{font-size:20px} body.print-year .ptitle span{color:var(--muted)}
+body.print-year .ptitle .ylegend{margin-left:auto}
+body.print-year .ynote-p:not(:empty){display:block;white-space:pre-wrap;margin-top:6px;padding-top:5px;border-top:1px dashed var(--line);font-size:11.5px}
+body.print-year .mm{display:flex;flex-direction:column}
+body.print-year .mm .notes{flex:1}
+body.print-year .ypage2{margin-top:0}
+body.print-year .yr{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px}
+/* 수업 회차 인쇄: 표마다 한 쪽 */
+body.print-cnt .yhead{display:none!important}
+body.print-cnt .pyr{display:inline}
+body.print-cnt .cwrap{overflow:visible}
+body.print-cnt .csec{margin:0 0 16px}
 @media print{
   .top,.fbar #editTypes,.fbar #editStaff,.fbar .whosel,#banner,.yhead button,.yhead .hint,.toast{display:none!important}
   body{background:#fff;color:#000} main{padding:0;max-width:none}
-  .yr{grid-template-columns:repeat(4,1fr);gap:8px} .mm{break-inside:avoid;border-color:#bbb}
+  .mm{break-inside:avoid;border-color:#bbb}
+  body.print-year main,body.print-cnt main{padding:0;max-width:none;margin:0}
+  body.print-year .ypage{break-inside:avoid;page-break-inside:avoid}
+  body.print-year .ypage2{break-before:page;page-break-before:always}
+  body.print-cnt .csec{break-inside:avoid;page-break-inside:avoid;break-after:page;page-break-after:always;margin:0;border-color:#bbb}
+  body.print-cnt .csec:last-child{break-after:auto;page-break-after:auto}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 /* 월간일정 */
@@ -703,15 +725,17 @@ function yearHTML(){
     return `<div class="mm${y<Y?" prev":""}"><div class="mt">${y}년 ${m+1}월</div>
       <table><thead><tr>${[..."일월화수목금토"].map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody><tr>${cells}</tr></tbody></table>
       <div class="notes">${notesH.length?`<div class="h">${notesH.join(" / ")}</div>`:""}${notesM.join("")}
-        <textarea class="ynote" data-ynote="${key}" rows="1" ${canEdit()?"":"readonly"} placeholder="${canEdit()?`${m+1}월 메모`:""}" aria-label="${y}년 ${m+1}월 메모">${esc(doc.note||"")}</textarea></div></div>`;
+        <textarea class="ynote" data-ynote="${key}" rows="1" ${canEdit()?"":"readonly"} placeholder="${canEdit()?`${m+1}월 메모`:""}" aria-label="${y}년 ${m+1}월 메모">${esc(doc.note||"")}</textarea><div class="ynote-p">${esc(doc.note||"")}</div></div></div>`;
   };
-  const body=months.map(mmHTML).join("");
+  const cards=months.map(mmHTML);
+  const legendP=Object.entries(YKINDS).map(([k,K])=>`<span style="background:${K.color};color:${K.ink}">${K.name} ${cnt[k]}</span>`).join("");
+  const page=(i,a)=>`<div class="ypage${i?" ypage2":""}"><div class="ptitle"><b>${Y}년 연간일정</b><span>${i?`${Y}년 5월 ~ 12월`:`${Y-1}년 9월 ~ ${Y}년 4월`} (${i+1}/2)</span><span class="ylegend">${legendP}</span></div><div class="yr">${a.join("")}</div></div>`;
   return `<div class="yhead">
     <select class="ym" id="yySel" aria-label="연도">${ys.map(k=>`<option value="${k}" ${k===Y?"selected":""}>${k}년</option>`).join("")}</select>
     <div class="ylegend">${Object.entries(YKINDS).map(([k,K])=>`<span style="background:${K.color};color:${K.ink}">${K.name} ${cnt[k]}</span>`).join("")}</div>
     <span class="hint">${canEdit()?"날짜를 누르면 표시를 고를 수 있어요.":"읽기 전용입니다."}${noData?` · ${Y}년 공휴일 정보는 아직 없습니다.`:""}</span>
     <button type="button" class="btn small" id="printBtn" style="margin-left:auto">인쇄</button>
-  </div><div class="yr">${body}</div>`;
+  </div>${page(0,cards.slice(0,8))}${page(1,cards.slice(8))}`;
 }
 async function saveYm(y,m,fn){
   const id=ymId(y,m), doc=clone(ymDoc(y,m)||{id, marks:{}, note:""});
@@ -1279,9 +1303,9 @@ function cntHTML(){
     <button type="button" class="btn small" data-view="year" style="margin-left:auto">연간일정 탭에서 보기</button>
     <button type="button" class="btn small" id="printBtn">인쇄</button>
   </div>
-  <section class="csec"><h3>월별 요일 수</h3><p class="sub">${Y-1}년 9월 ~ ${Y}년 12월 · 수업월 기준: 16일 이후의 개강일부터 그 달 말일까지는 다음 달로 셉니다. 기타 표시일은 그대로 포함합니다.</p>${t1}</section>
-  <section class="csec"><h3>3개월반 분기별 회차</h3><p class="sub">3개월(또는 2·3개월 동시) 개강일부터 다음 3개월 개강일 전날까지</p>${t2}</section>
-  <section class="csec"><h3>2개월반 회차</h3><p class="sub">2개월(또는 2·3개월 동시) 개강일부터 다음 2개월 개강일 전날까지</p>${t3}</section>`;
+  <section class="csec"><h3><span class="pyr">${Y}년 </span>월별 요일 수</h3><p class="sub">${Y-1}년 9월 ~ ${Y}년 12월 · 수업월 기준: 16일 이후의 개강일부터 그 달 말일까지는 다음 달로 셉니다. 기타 표시일은 그대로 포함합니다.</p>${t1}</section>
+  <section class="csec"><h3><span class="pyr">${Y}년 </span>3개월반 분기별 회차</h3><p class="sub">3개월(또는 2·3개월 동시) 개강일부터 다음 3개월 개강일 전날까지</p>${t2}</section>
+  <section class="csec"><h3><span class="pyr">${Y}년 </span>2개월반 회차</h3><p class="sub">2개월(또는 2·3개월 동시) 개강일부터 다음 2개월 개강일 전날까지</p>${t3}</section>`;
 }
 
 function selBarHTML(ev,y,m){
@@ -1602,8 +1626,38 @@ function unfitMonthPrint(){
   document.body.classList.remove("print-month");
   const sh=document.querySelector(".mosheet"); if(sh){ sh.style.zoom=""; sh.style.width=""; }
 }
-window.addEventListener("beforeprint", fitMonthPrint);
-window.addEventListener("afterprint", unfitMonthPrint);
+/* 연간일정: 모든 달 같은 높이, 8개월씩 한 쪽 */
+const YEAR_W=1400;
+function fitYearPrint(){
+  const pages=[...document.querySelectorAll(".ypage")]; if(state.view!=="year"||!pages.length) return;
+  document.body.classList.add("print-year");
+  const cards=[...document.querySelectorAll(".mm")];
+  pages.forEach(p=>{ p.style.zoom=""; p.style.width=YEAR_W+"px"; });
+  cards.forEach(c=>c.style.height="");
+  const H=Math.max(...cards.map(c=>c.offsetHeight));
+  cards.forEach(c=>c.style.height=H+"px");
+  pages.forEach(p=>{ p.style.zoom=String(Math.min(PAGE_W/YEAR_W, PAGE_H/p.scrollHeight)); });
+}
+/* 수업 회차: 표마다 한 쪽에 맞추기 */
+function fitCntPrint(){
+  const secs=[...document.querySelectorAll(".csec")]; if(state.view!=="cnt"||!secs.length) return;
+  document.body.classList.add("print-cnt");
+  secs.forEach(sc=>{
+    sc.style.zoom=""; sc.style.width=PAGE_W+"px";
+    let z=Math.min(1.35, PAGE_W/sc.scrollWidth, PAGE_H/sc.scrollHeight);
+    if(z>1){ sc.style.width=Math.floor(PAGE_W/z)+"px"; z=Math.min(z, PAGE_H/sc.scrollHeight); }
+    sc.style.zoom=String(z);
+  });
+}
+function fitPrint(){ fitMonthPrint(); fitYearPrint(); fitCntPrint(); }
+function unfitPrint(){
+  unfitMonthPrint();
+  document.body.classList.remove("print-year","print-cnt");
+  document.querySelectorAll(".ypage,.csec").forEach(el=>{ el.style.zoom=""; el.style.width=""; });
+  document.querySelectorAll(".mm").forEach(el=>{ el.style.height=""; });
+}
+window.addEventListener("beforeprint", fitPrint);
+window.addEventListener("afterprint", unfitPrint);
 $("#homeBtn").onclick=()=>{ state.sel=null; state.view="month"; state.moKey=pickRecentMonth(); state.y=new Date().getFullYear(); state.m=new Date().getMonth(); render(); window.scrollTo({top:0,behavior:"smooth"}); };
 /* 월간일정: 파일 끌어다 놓기 */
 document.addEventListener("dragover",e=>{ if(state.view!=="month"||!canEdit()||document.querySelector("dialog[open]")) return; if([...(e.dataTransfer?.types||[])].includes("Files")){ e.preventDefault(); $("#app").classList.add("modrop"); } });
